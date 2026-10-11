@@ -2,9 +2,9 @@
 
 ## Sources reviewed
 
-- [Business Plan v1.5](../.local/conversation-workspace/files/attached_assets/Neighborhood_Kitchen_Business_Plan_v1.5_1791685354736.md)
-- [Product Requirements v1.4](../.local/conversation-workspace/files/attached_assets/Neighborhood_Kitchen_PRD_v1.4_1791685354745.md)
-- [Development Handoff v1.6](../.local/conversation-workspace/files/attached_assets/Neighborhood_Kitchen_Development_Handoff_v1.6_1791685354745.md)
+- [Business Plan v1.5](../.conversation/attached_assets/Neighborhood_Kitchen_Business_Plan_v1.5_1791685354736.md)
+- [Product Requirements v1.4](../.conversation/attached_assets/Neighborhood_Kitchen_PRD_v1.4_1791685354745.md)
+- [Development Handoff v1.6](../.conversation/attached_assets/Neighborhood_Kitchen_Development_Handoff_v1.6_1791685354745.md)
 
 The uploaded originals are preserved unchanged in this project. All three documents are dated 10 October 2026.
 

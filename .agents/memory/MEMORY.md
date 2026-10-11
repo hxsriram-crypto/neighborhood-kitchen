@@ -1,0 +1,1 @@
+- [Git-provider CLI access](git-provider-cli-access.md) — a connected Git provider is not proof that GitHub CLI API commands are authenticated.

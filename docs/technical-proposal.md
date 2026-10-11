@@ -153,9 +153,9 @@ No service account signup, secret request, schema migration, package installatio
 
 ## Sources
 
-- [PRD v1.4](../.local/conversation-workspace/files/attached_assets/Neighborhood_Kitchen_PRD_v1.4_1791685354745.md)
-- [Development Handoff v1.6](../.local/conversation-workspace/files/attached_assets/Neighborhood_Kitchen_Development_Handoff_v1.6_1791685354745.md), especially Prompt 2 and the staged gates
-- [Business Plan v1.5](../.local/conversation-workspace/files/attached_assets/Neighborhood_Kitchen_Business_Plan_v1.5_1791685354736.md)
+- [PRD v1.4](../.conversation/attached_assets/Neighborhood_Kitchen_PRD_v1.4_1791685354745.md)
+- [Development Handoff v1.6](../.conversation/attached_assets/Neighborhood_Kitchen_Development_Handoff_v1.6_1791685354745.md), especially Prompt 2 and the staged gates
+- [Business Plan v1.5](../.conversation/attached_assets/Neighborhood_Kitchen_Business_Plan_v1.5_1791685354736.md)
 - [Decision log](decision-log.md)
 - [Replit cloud pricing updates, August 2026](https://docs.replit.com/billing/aug-cloud-billing-updates)
 - [Development and production databases](https://docs.replit.com/features/data-and-storage/development-and-production)
