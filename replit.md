@@ -10,6 +10,10 @@ Unresolved product, design, architecture, vendor, cost, privacy, or scope choice
 
 The founder approved React/Vite, the existing Express API, development PostgreSQL/Drizzle, Replit-managed Clerk Auth, and Replit App Storage, and confirmed control of the workspace and billing. This selects tools only, not provisioning or implementation. A numeric spending ceiling, required service access, and affected privacy/test settings are still unresolved. Real AI and publishing remain deferred.
 
+## GitHub source repository
+
+The founder supplied `https://github.com/hxsriram-crypto/neighborhood-kitchen.git` as the new empty private repository. It is configured as `origin`; preserve the separate `gitsafe-backup` remote. Keep the repository private and do not force-push or overwrite unexpected remote content. GitHub access is currently blocked by authentication; no upload has been confirmed. Verify access, remote contents, and the pushed branch before claiming synchronization.
+
 ## Run & Operate
 
 - `pnpm --filter @workspace/neighborhood-kitchen run dev` — playable browser-local prototype, using the managed workflow's environment
