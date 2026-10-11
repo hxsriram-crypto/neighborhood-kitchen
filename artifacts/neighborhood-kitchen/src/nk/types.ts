@@ -17,6 +17,8 @@ export interface Offer {
   pickupDate: string; pickupStart: string; pickupEnd: string; deadlineDate: string; deadlineTime: string;
   commitment: boolean; contactConsent: boolean; status: OfferStatus; moderated: boolean;
   version: number; updatedAt: string; art: "peach" | "sage" | "blue";
+  /** First publication in this browser; absent for unpublished drafts and older samples with unknown history. */
+  publishedAt?: string;
   otherAllergens?: string;
   preparationConfirmation?: PreparationConfirmation;
   revisions?: OfferRevision[];
