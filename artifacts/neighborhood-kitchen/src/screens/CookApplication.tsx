@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useStore } from "@/nk/store";
+import { useStore, useUnsavedChanges } from "@/nk/store";
 import { SignInGate } from "@/nk/Gates";
 import { Btn, Field, Notice, PageTitle } from "@/nk/ui";
 import type { Application } from "@/nk/types";
@@ -10,9 +10,16 @@ export default function CookApplication() {
   const { data, saveApplication, restartApplication, go } = useStore();
   const me = data.cooks.find((c) => c.id === ME)!;
   const [a, setA] = useState<Application>(data.applications[ME]);
+  const { markSaved } = useUnsavedChanges(a, data.signedIn);
   const [err, setErr] = useState<string[]>([]);
   const set = (p: Partial<Application>) => setA({ ...a, ...p });
   const locked = me.status === "pending" || me.status === "approved";
+  const save = (status: typeof me.status, submitted = false) => {
+    const next = { ...a, updatedAt: new Date().toISOString(), ...(submitted ? { submittedAt: new Date().toISOString() } : {}) };
+    saveApplication(next, status);
+    markSaved(next);
+    setA(next);
+  };
   const submit = () => {
     const e: string[] = [];
     if (!a.name.trim()) e.push("Add your public name.");
@@ -20,7 +27,7 @@ export default function CookApplication() {
     if (!a.jurisdiction) e.push("Acknowledge the jurisdiction statement.");
     if (!a.disclosures) e.push("Agree to the disclosure policy.");
     setErr(e);
-    if (!e.length) saveApplication({ ...a, updatedAt: new Date().toISOString(), submittedAt: new Date().toISOString() }, "pending");
+    if (!e.length) save("pending", true);
   };
   const chk = (id: string, key: "residential" | "jurisdiction" | "disclosures", text: string) => <label className="mb-3 flex items-start gap-3 text-sm leading-5"><input data-testid={"check-" + id} id={id} type="checkbox" disabled={locked} className="mt-1 accent-[#365b4b]" checked={a[key]} onChange={(e) => set({ [key]: e.target.checked })} />{text}</label>;
   return <div className="max-w-3xl"><PageTitle eyebrow="A neighbor who cooks" title="Apply to offer meals." sub="Local application and review-state illustration only. No real application, jurisdiction rule or credential is submitted." />
@@ -43,7 +50,7 @@ export default function CookApplication() {
       {chk("app-jurisdiction", "jurisdiction", "I understand requirements depend on the applicable jurisdiction and no jurisdiction is selected in this demo.")}
       {chk("app-disclosures", "disclosures", "I agree to provide clear ingredients, sourcing, organic status, allergens, cross-contact, pickup and deadline disclosures.")}
       {err.length > 0 && <Notice tone="red" testid="errors-app"><b>Before submitting:</b><ul className="ml-4 list-disc">{err.map((x) => <li key={x}>{x}</li>)}</ul></Notice>}
-      <div className="flex flex-wrap gap-2"><Btn testid="button-save-application" disabled={locked} onClick={() => { setErr([]); saveApplication({ ...a, updatedAt: new Date().toISOString() }, me.status === "none" ? "draft" : me.status); }}>Save incomplete application</Btn><Btn testid="button-submit-application" variant="solid" disabled={locked} onClick={submit}>Submit sample application</Btn>{me.status === "approved" && <Btn variant="plain" testid="button-restart-application" onClick={() => { restartApplication(); setA({ ...a, residential: false, jurisdiction: false, disclosures: false, evidenceSample: false }); }}>Demo: restart as new applicant</Btn>}{me.status === "approved" && <Btn onClick={() => go("My cooking")}>Go to My cooking</Btn>}</div>
+      <div className="flex flex-wrap gap-2"><Btn testid="button-save-application" disabled={locked} onClick={() => { setErr([]); save(me.status === "none" ? "draft" : me.status); }}>Save incomplete application</Btn><Btn testid="button-submit-application" variant="solid" disabled={locked} onClick={submit}>Submit sample application</Btn>{me.status === "approved" && <Btn variant="plain" testid="button-restart-application" onClick={() => { restartApplication(); const next = { ...a, residential: false, jurisdiction: false, disclosures: false, evidenceSample: false, submittedAt: undefined }; markSaved(next); setA(next); }}>Demo: restart as new applicant</Btn>}{me.status === "approved" && <Btn onClick={() => go("My cooking")}>Go to My cooking</Btn>}</div>
       <p className="mt-5 border-t border-[#edf0e9] pt-4 text-xs leading-5 text-[#7c887f]">Any public review badge must state exactly what was checked and when. No jurisdiction requirements are selected or implied.</p>
     </div></SignInGate></div>;
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Check, Minus, Plus, Trash2 } from "lucide-react";
-import { useStore } from "@/nk/store";
+import { useStore, useUnsavedChanges } from "@/nk/store";
 import { SignInGate } from "@/nk/Gates";
 import { Btn, Field, Notice, OfferCard, PageTitle } from "@/nk/ui";
 import { blankOffer, CUSTOMER_REMINDER, deadlineMs, fmtDeadline, fmtDay, fmtLong, fmtStamp, fmtWindow, pickupEndMs, pickupStartMs, PREPARATION_STATEMENT, PREPARATION_VERSION, usdMinorUnits, validAllergens } from "@/nk/domain";
@@ -12,6 +12,7 @@ export default function OfferEditor() {
   const { data, now, nav, go, upsertOffer, withdrawContact } = useStore();
   const existing = nav.editorId ? data.offers.find((o) => o.id === nav.editorId && o.cookId === ME) : undefined;
   const [f, setF] = useState<Offer>(() => ({ ...(existing ? structuredClone(existing) : { ...blankOffer(Date.now()), ...(nav.seed ?? {}) }), commitment: false, preparationConfirmation: undefined }));
+  const { markSaved, markSavedFields } = useUnsavedChanges(f, data.signedIn, !!nav.seed && !existing);
   const [errs, setErrs] = useState<string[]>([]);
   const [preview, setPreview] = useState(false);
   const [saved, setSaved] = useState("");
@@ -24,13 +25,15 @@ export default function OfferEditor() {
     if (!f.title.trim()) { setErrs(["Add a meal name before saving."]); return; }
     const e = upsertOffer(stamp(f), status === "published" ? "Changes saved to your published offer." : status === "closed" ? "Changes saved; offer stays closed." : "Draft saved.", f.commitment);
     setErrs(e); if (e.length) return;
-    set({ commitment: false, preparationConfirmation: undefined });
+    const next = { ...f, commitment: false, preparationConfirmation: undefined };
+    markSaved(next);
+    setF(next);
     setSaved(status === "published" ? "Changes saved to the published offer." : "Draft saved.");
-    if (!existing) setF((x) => ({ ...x }));
   };
   const publish = (reopen: boolean) => {
     const e = upsertOffer({ ...stamp(f), status: "published" }, reopen ? "Offer reopened by you and published." : "Offer published.", f.commitment);
     setErrs(e); if (e.length) return;
+    markSaved();
     go("My cooking");
   };
   const pStart = pickupStartMs(f), pEnd = pickupEndMs(f), dl = deadlineMs(f);
@@ -72,7 +75,7 @@ export default function OfferEditor() {
         <Field label="Contact route" id="contact-route"><select id="contact-route" className="nk-input" disabled><option>Phone · fictional sample</option></select></Field>
         <div className="mb-4 rounded-xl border border-[#e5e9e0] p-4"><p className="nk-label">Family-care promise · cook statement</p><p className="text-sm leading-5 text-[#65746a]">“I make this meal with the same care and ingredients I use for my own family.” A community promise, not a safety or nutrition claim.</p></div>
         <label className="mb-3 flex items-start gap-3 text-sm leading-5"><input id="contact-consent" data-testid="check-contact-consent" type="checkbox" className="mt-1 accent-[#365b4b]" checked={f.contactConsent} onChange={(e) => set({ contactConsent: e.target.checked })} />I consent to display the fictional phone contact route to signed-in neighbors who consent.</label>
-        {existing?.contactConsent && <div className="mb-4"><Btn testid="button-withdraw-contact" onClick={() => { withdrawContact(existing.id); set({ contactConsent: false }); setErrs([]); }}>Withdraw cook contact consent now</Btn><p className="mt-2 text-xs text-[#65746a]">Immediate: hides the saved offer and blocks its sample route without saving other editor changes. {CUSTOMER_REMINDER}</p></div>}
+        {existing?.contactConsent && <div className="mb-4"><Btn testid="button-withdraw-contact" onClick={() => { withdrawContact(existing.id); markSavedFields({ contactConsent: false }); set({ contactConsent: false }); setErrs([]); }}>Withdraw cook contact consent now</Btn><p className="mt-2 text-xs text-[#65746a]">Immediate: hides the saved offer and blocks its sample route without saving other editor changes. {CUSTOMER_REMINDER}</p></div>}
         <label className="mb-5 flex items-start gap-3 text-sm leading-5"><input id="same-day-commitment" data-testid="check-commitment" type="checkbox" className="mt-1 accent-[#365b4b]" checked={f.commitment} onChange={(e) => set({ commitment: e.target.checked })} /><span>{PREPARATION_STATEMENT}<span className="block text-xs text-[#818b82]">Statement {PREPARATION_VERSION}. Confirm explicitly for every publication, reopening or published edit. Opening the editor, saving or changing pickup date clears the checkbox. Confirmation time is recorded on successful publication only. {f.pickupDate ? "Planned for " + fmtLong(f.pickupDate) + " (cook-reported)." : "Advance publishing is not advance preparation."}</span></span></label>
         <Notice>{CUSTOMER_REMINDER}</Notice>
         {existing && <details className="mb-4" data-testid="panel-revisions"><summary className="cursor-pointer text-sm font-semibold">Local fictional offer revisions ({existing.revisions?.length ?? 0})</summary><p className="my-2 text-xs">Offer content only; no order or customer history. Revisions from before this feature are not reconstructed.</p>{existing.preparationConfirmation && <p className="mb-2 text-xs">Latest preparation confirmation: {existing.preparationConfirmation.statementVersion} · {fmtStamp(existing.preparationConfirmation.confirmedAt)} · offer v{existing.preparationConfirmation.offerVersion} · pickup {existing.preparationConfirmation.pickupDate}</p>}{[...(existing.revisions ?? [])].reverse().map((r) => <details key={r.version} className="mb-2 rounded border p-2"><summary className="cursor-pointer text-xs">v{r.version} · {fmtStamp(r.updatedAt)} · {r.title}</summary><pre className="mt-2 whitespace-pre-wrap break-all text-[11px]">{JSON.stringify(r, null, 2)}</pre></details>)}</details>}
