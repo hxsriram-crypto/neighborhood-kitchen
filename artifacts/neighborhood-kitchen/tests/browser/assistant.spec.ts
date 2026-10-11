@@ -4,6 +4,11 @@ import { makeSeed } from "../../src/nk/seed";
 const clock = Date.parse("2030-06-10T12:00:00Z");
 const storageKey = "neighborhood-kitchen-prototype-v1";
 const data = makeSeed(clock);
+// The offer handoff test needs the ordinary editor; this is still only a fictional
+// browser-local demo identity. Keep publication unavailable and block service/write
+// requests below.
+data.signedIn = true;
+data.cooks.find((cook) => cook.id === "me")!.status = "pending";
 const soup = data.offers.find((offer) => offer.id === "soup")!;
 // Deliberate positive controls: all are otherwise matching fictional offers.
 // Never derive expected matches from the parser/matcher under test.
@@ -43,12 +48,18 @@ const test = base.extend<{ helper: Page }>({
     await expect(page.getByTestId("input-assistant")).toBeVisible();
     await assertBoundaries(page);
     await use(page);
-    await assertBoundaries(page);
+    if (new URL(page.url()).pathname.endsWith("/assistant")) await assertBoundaries(page);
+    else await assertBrowserLocalOnly(page);
     expect(forbidden, "The scripted helper must not call a service or perform a write").toEqual([]);
     expect(await page.evaluate((key) => localStorage.getItem(key), storageKey),
       "Searching, chip edits, mode changes and fallback must not mutate fictional records").toBe(snapshot);
   },
 });
+
+async function assertBrowserLocalOnly(page: Page) {
+  await expect(page.getByTestId("banner-prototype")).toContainText("No real ordering, payment, calls or messages.");
+  await expect(page.locator('a[href^="tel:"], a[href^="sms:"], a[href^="mailto:"]')).toHaveCount(0);
+}
 
 const results = (page: Page) => page.locator('[data-testid^="result-"]');
 const chips = (page: Page) => page.locator('button[data-testid^="chip-"]');
@@ -243,4 +254,65 @@ test("unknown allergen warnings are prominent within results; absent is not unkn
     await expect(page.getByTestId(`result-${id}`)).toContainText("Published offer; confirm availability with the cook.");
   }
   await expect(page.getByText("Allergen chips exclude only offers that declare the allergen present. Unknown stays unknown.", { exact: true })).toBeVisible();
+});
+
+test("offer helper transfers only supplied facts and leaves unsupported disclosures explicit in an unsaved editor draft", async ({ helper: page }) => {
+  const before = await page.evaluate((key) => localStorage.getItem(key), storageKey);
+  await page.getByTestId("button-mode-offer").click();
+  await run(page, "Fictional lentil soup with tomatoes, green lentils and onion, $12, one 16 oz jar, chilled");
+
+  for (const fact of [
+    "Meal name: Fictional lentil soup",
+    "Ingredients named: tomatoes, green lentils, onion (sourcing and organic status unknown)",
+    "Price: $12",
+    "Portion: one 16 oz jar",
+    "Pickup condition: chilled",
+  ]) {
+    await expect(page.getByText(fact, { exact: true })).toBeVisible();
+  }
+  for (const missing of [
+    "Organic status for each ingredient (unknown is fine, but say so)",
+    "Each of the nine major allergens: present, not present, or unknown",
+    "Kitchen cross-contact, or that it is unknown",
+    "Pickup date, start and end time (UTC)",
+    "A separate ordering deadline, no later than pickup start",
+    "Phone-route consent and the same-day preparation commitment",
+  ]) {
+    await expect(page.getByTestId("list-missing")).toContainText(missing);
+  }
+  await expect(page.getByTestId("list-missing")).toContainText("I won’t fill these in");
+
+  await page.getByTestId("button-open-editor").click();
+  await expect(page.getByText("Draft fields came from the scripted helper using only what you typed.", { exact: false })).toBeVisible();
+  await expect(page.getByTestId("input-title")).toHaveValue("Fictional lentil soup");
+  await expect(page.getByTestId("input-price")).toHaveValue("12");
+  await expect(page.getByTestId("input-portion")).toHaveValue("one 16 oz jar");
+  await expect(page.getByTestId("select-condition")).toHaveValue("Chilled");
+
+  const ingredientNames = page.locator('input[data-testid^="input-ing-name-"]');
+  await expect(ingredientNames).toHaveCount(3);
+  await expect(ingredientNames.nth(0)).toHaveValue("tomatoes");
+  await expect(ingredientNames.nth(1)).toHaveValue("green lentils");
+  await expect(ingredientNames.nth(2)).toHaveValue("onion");
+  for (let index = 0; index < 3; index++) {
+    await expect(page.getByRole("textbox", { name: `Ingredient ${index + 1} source` })).toHaveValue("");
+    await expect(page.getByLabel(`Ingredient ${index + 1} organic status`)).toHaveValue("unknown");
+  }
+
+  for (const allergen of ["Milk", "Egg", "Fish", "Crustacean shellfish", "Tree nuts", "Peanuts", "Wheat", "Soybeans", "Sesame"]) {
+    await expect(page.getByTestId(`select-allergen-${allergen}`)).toHaveValue("unknown");
+  }
+  await expect(page.locator("#cross-contact")).toHaveValue("unknown");
+  await expect(page.getByTestId("input-pickup-date")).toHaveValue("");
+  await expect(page.getByTestId("input-pickup-start")).toHaveValue("");
+  await expect(page.getByTestId("input-pickup-end")).toHaveValue("");
+  await expect(page.getByTestId("input-deadline-date")).toHaveValue("");
+  await expect(page.getByTestId("input-deadline-time")).toHaveValue("");
+  await expect(page.getByTestId("check-contact-consent")).not.toBeChecked();
+  await expect(page.getByTestId("check-commitment")).not.toBeChecked();
+
+  // Opening the editor is a handoff only: it neither saves the draft nor publishes it.
+  await expect(page.getByTestId("button-publish")).toBeDisabled();
+  await expect(page.getByTestId("text-saved")).toHaveCount(0);
+  expect(await page.evaluate((key) => localStorage.getItem(key), storageKey)).toBe(before);
 });

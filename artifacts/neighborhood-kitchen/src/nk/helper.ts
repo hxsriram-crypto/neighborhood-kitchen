@@ -107,14 +107,23 @@ export function matchOffers({ chips, issues }: FindResult, offers: Offer[], cook
 export interface OfferDraftResult { draft: Partial<Offer>; known: string[]; missing: string[] }
 export function parseOffer(text: string): OfferDraftResult {
   const raw = text.trim();
-  const draft: Partial<Offer> = {};
+  // Blank out the editor's convenience schedule defaults: the helper has no
+  // authority to choose pickup or ordering times on the cook's behalf.
+  const draft: Partial<Offer> = {
+    pickupDate: "", pickupStart: "", pickupEnd: "", deadlineDate: "", deadlineTime: "",
+  };
   const known: string[] = [];
   if (raw) {
     const head = raw.split(/ with |[,.;\n]/i)[0].trim();
     if (head) { draft.title = head[0].toUpperCase() + head.slice(1); known.push("Meal name: " + draft.title); }
     const w = raw.match(/ with ([^.;\n]+)/i);
     if (w) {
-      const names = w[1].split(/,| and /i).map((s) => s.trim()).filter(Boolean);
+      // Do not absorb adjacent price, portion, condition or schedule details into
+      // the ingredient list. They are parsed independently (or left missing).
+      const detailStart = /(?:,\s*(?=(?:for\s+)?\$\s*\d|\b(?:one|two|three|\d+)\s+(?:[a-z0-9-]+\s+){0,2}(?:jar|bowl|pie|pies|slice|slices|box|container|loaf|portion)s?\b|\b(?:hot|chilled|cold)\b|\b(?:pickup|deadline|ordering deadline)\b))|\s+for\s+\$\s*\d/i;
+      const detailIndex = w[1].search(detailStart);
+      const ingredientText = detailIndex < 0 ? w[1] : w[1].slice(0, detailIndex);
+      const names = ingredientText.split(/,| and /i).map((s) => s.trim()).filter(Boolean);
       if (names.length) { draft.ingredients = names.map((name): Ingredient => ({ name, source: "", organic: "unknown" })); known.push("Ingredients named: " + names.join(", ") + " (sourcing and organic status unknown)"); }
     }
     const p = raw.match(/\$\s?(\d+(?:\.\d{1,2})?)/);
