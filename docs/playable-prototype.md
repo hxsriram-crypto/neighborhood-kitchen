@@ -35,39 +35,32 @@ Explore the approved marketplace design with working browser-local interactions 
 
 Navigation uses artifact-base-prefixed URLs. Meals open at `/meals/<fictional-offer-id>` (for example `/meals/flatbread`), and reload, direct entry, browser Back and Forward retain the selected screen. Profiles, cooking, editors, the helper and simulated operator screens also have routes. A copied link selects a record in the recipient's own browser-local sample data; it does not share edits or enable a service. Unknown meal IDs show a not-found message. Draft previews require the simulated owner identity. Expired, closed, consent-withdrawn, moderated and ineligible links retain disclosures but block contact, even with previously recorded neighbor consent. Helper draft fields remain local history state, not URL parameters.
 
-Meal editors and cook applications warn before discarding unsaved input on screen navigation or browser Back/Forward. The in-app dialog offers **Stay and keep editing** or **Discard and leave**, with focus initially on staying. Reload and tab close use the browser's own leave warning. Untouched forms and successful saves/submissions do not warn; failed validation keeps protection active. Helper-seeded offers count as unsaved until saved. Immediate contact withdrawal saves only consent and does not save other editor changes. There is no automatic draft recovery after a confirmed discard, browser crash or forced tab close; browsers may suppress unload warnings, especially on mobile. Use the explicit local save buttons to keep fictional work.
+Meal editors and cook applications warn before discarding unsaved input on screen navigation or browser Back/Forward. The in-app dialog offers **Stay and keep editing** or **Discard and leave**, with focus initially on staying. Reload and tab close use the browser's own leave warning; browsers may suppress unload warnings, especially on mobile. Untouched forms and successful saves/submissions do not warn; failed validation keeps protection active. Helper-seeded offers count as unsaved until saved. Immediate contact withdrawal saves only consent and does not save other editor changes. Fictional offer and cook-application drafts can separately opt into browser-local recovery for up to seven days. Recovery restores fields to a form only; it never publishes or submits and never restores a same-day preparation confirmation. Copies are removed on save/submission, explicit discard, sample reset or expiry. They are not shared across browsers, devices or tabs. Fictional report forms have an explicit discard warning but are not covered by the seven-day recovery policy.
 
 ## Verification
 
-Unsaved-edit protection passes the targeted typecheck/build and five focused history-protection tests covering clean/dirty departures, cancelled Back/Forward, multi-entry traversals, reload warnings, cleanup and older unindexed history. Browser checks verified retained input on staying, navigation and saved-baseline restoration on discard, Back/Forward without duplicate steps, cancelled reload, failed validation remaining protected, successful local draft/application saves and sample submission, and no false warning after demo application restart. All actions remained fictional and browser-local.
+Fresh checks run after the merged prototype updates:
 
-The consent/publication changes have passed their targeted typecheck/build and fourteen automated checks (six original domain/persistence checks and eight publication regressions). These do not constitute verification of real sign-in, file storage, multi-user security, real AI, or live operation.
+- 44 domain, helper, navigation, publication, recovery and persistence tests passed.
+- 14 scripted-helper browser tests, 48 navigation/form-protection browser tests, and 4 discovery-cutoff browser tests passed.
+- App and browser TypeScript checks passed; the Vite production build passed.
 
-A single browser walkthrough verified the fictional flatbread lifecycle: rejection of excess price precision, other-allergen display, fresh preparation checks, prior revision content, inert phone disclosure, immediate consent withdrawal, explicit restoration, closure/reopening, reload persistence and moderated reopening rejection. The walkthrough also found a negative-margin mobile navigation overflow; its spacing was corrected. Fresh post-reload browser error capture was empty. A Vite hot-update warning during editing required re-entering the initial test inputs; the subsequent lifecycle checks passed.
+These are targeted prototype checks, not a complete run of PRD T01–T18, a screen-reader/accessibility audit, multi-user security validation, or service-backed verification. No real accounts, shared database, uploads, AI, contact requests, participant notifications or live food activity are enabled.
 
-The URL/navigation change passed the targeted typecheck/build and eighteen domain/persistence/publication/navigation checks. One isolated browser pass verified meal reload, direct entry, Back/Forward through meal and cook-profile screens, active contact gates and inert plain text, and expired, closed, consent-withdrawn, moderated and ineligible detail links with contact blocked even after neighbor consent. Missing records, signed-out draft privacy, and simulated editor/operator gates also passed. No app JavaScript errors were observed, and the tester restored its original local sample data. An extra malformed UTF-8 URL (`/meals/%E0%A4%A`) was rejected before the app loaded (browser protocol error; direct Vite request returned 404), so its app-rendered not-found state was not browser-verified; the parser's safe handling is covered by a unit check.
-
-Run domain/persistence checks from the workspace root:
-
-The local discovery correction adds seven focused checks for first-publication timestamps, edit/closure/reopening preservation, equal-pickup ordering, unknown legacy history, storage reload, fresh fixtures and cutoff expiry. All 33 current checks pass, along with the targeted typecheck/build. A preview screenshot confirms separate labeled pickup and contact/order cutoff information on the featured card. These checks do not add real neighborhoods or shared services.
+Run the local domain and persistence tests from the workspace root:
 
 ```sh
 pnpm --filter @workspace/api-server exec esbuild ../neighborhood-kitchen/src/nk/*.test.ts --bundle --platform=node --format=esm --outdir=/tmp/neighborhood-kitchen-tests
 node --test /tmp/neighborhood-kitchen-tests/*.js
 ```
 
-Build checks outside the managed workflow need the artifact's non-secret routing configuration:
+Run the application checks:
 
 ```sh
-PORT=23820 BASE_PATH=/ pnpm --filter @workspace/neighborhood-kitchen run build
 pnpm --filter @workspace/neighborhood-kitchen run typecheck
-```
-
-Run the focused open-browse clock regressions:
-
-```sh
-pnpm --filter @workspace/neighborhood-kitchen run test:discovery:browser
+PORT=23820 BASE_PATH=/ pnpm --filter @workspace/neighborhood-kitchen run build
 pnpm --filter @workspace/neighborhood-kitchen run typecheck:browser
+pnpm --filter @workspace/neighborhood-kitchen run test:helper:browser
+pnpm --filter @workspace/neighborhood-kitchen run test:navigation:browser
+pnpm --filter @workspace/neighborhood-kitchen run test:discovery:browser
 ```
-
-The four clock checks use a disposable static build, isolated browser storage and fictional meals. They verify simultaneous contact-cutoff expiry, featured-offer replacement, next-deadline timer rearming and final empty states, filtered-list expiry without losing search text, and independent focus/visibility refresh at cutoff equality while scheduled timers remain paused. Timer assertions allow the existing 50ms scheduling cushion but run before the 15-second polling fallback. Background-tab checks simulate lifecycle signals explicitly rather than relying on headless tab visibility. No navigation/Back or helper restrictions are retested, no services or contact requests are permitted, and expiry must leave stored meals unchanged. Build/test outputs stay in the ignored `generated-artifacts/discovery-browser/` directory.

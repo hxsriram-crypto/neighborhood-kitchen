@@ -73,6 +73,10 @@ The founder chose “Hide from discovery and block contact” on October 10, 202
 Withdrawal immediately removes the fictional offer from discovery and blocks its inert sample route, including an already-open detail view. An unavailable detail view may still show disclosures. Restoring consent requires explicit cook review; it does not override closure, expiry, moderation or eligibility.
 This decision applies to the browser-local fictional prototype only. It does not approve real contact or real-data retention.
 
+## Opt-in recovery of fictional drafts
+
+The founder approved per-draft, browser-local recovery for fictional offer and cook-application drafts. An opted-in copy is kept in this browser for up to seven days and deleted when the draft is saved or submitted, explicitly discarded, reset with the sample data, or expires. Restoring the copy refills the form only; it never publishes or submits and never restores a same-day preparation confirmation. Recovery does not synchronize across browsers, devices or tabs. This applies only to the fictional prototype and does not authorize backend storage or collection of real information.
+
 ## Open decisions
 
 The document review lists deferred decision areas. They are not approved defaults. Before affected work, state the question, explain its impact, offer practical options and a recommendation, wait for the founder's explicit answer, and add that answer here. Do not re-ask decisions already approved within their stated scope.
