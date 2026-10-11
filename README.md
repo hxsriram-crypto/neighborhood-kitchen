@@ -35,6 +35,8 @@ The browser-local prototype does not require the template API server, a database
 
 See [the prototype walkthrough](docs/playable-prototype.md) for sample flows, limitations, and domain/persistence checks. See [the decision log](docs/decision-log.md) before extending the service-backed product.
 
+The [prototype readiness review](docs/prototype-readiness-review.md) maps the current app to PRD T01–T18, distinguishes demonstration gaps from deferred services, and provides a prioritized next-build checklist. It does not authorize implementation.
+
 ## GitHub
 
 Commit and push source changes to the private repository through the Git pane or Git commands after its remote is configured. Browser-local demo data is not part of Git synchronization. Do not commit credentials, participant information, real evidence, dependencies, or build outputs.
