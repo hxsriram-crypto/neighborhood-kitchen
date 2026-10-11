@@ -1,6 +1,23 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { protectUnsavedNavigation } from "./leaveProtection";
+import { createUnsavedChangeRegistry, protectUnsavedNavigation } from "./leaveProtection";
+
+test("independent form guards combine, and unregistering one preserves the others", () => {
+  const registry = createUnsavedChangeRegistry();
+  let firstDirty = false;
+  let secondDirty = false;
+  const unregisterFirst = registry.register(() => firstDirty);
+  const unregisterSecond = registry.register(() => secondDirty);
+  assert.equal(registry.shouldWarn(), false);
+  firstDirty = true;
+  assert.equal(registry.shouldWarn(), true);
+  firstDirty = false;
+  secondDirty = true;
+  unregisterFirst();
+  assert.equal(registry.shouldWarn(), true);
+  unregisterSecond();
+  assert.equal(registry.shouldWarn(), false);
+});
 
 function browser() {
   const events = new EventTarget();

@@ -44,8 +44,13 @@ data.reports = [];
 data.audit = [];
 const snapshot = JSON.stringify(data);
 
-export const test = base.extend<{ navigation: Page }>({
-  navigation: async ({ page, context, baseURL }, use) => {
+interface NavigationState { allowLocalStorageChanges: boolean }
+
+export const test = base.extend<{ navigation: Page; navigationState: NavigationState }>({
+  navigationState: async ({}, use) => {
+    await use({ allowLocalStorageChanges: false });
+  },
+  navigation: async ({ page, context, baseURL, navigationState }, use) => {
     const origin = new URL(baseURL!).origin;
     const forbidden: string[] = [];
     const errors: string[] = [];
@@ -81,8 +86,10 @@ export const test = base.extend<{ navigation: Page }>({
     } finally {
       expect(forbidden, "No external, API, contact or write requests may occur").toEqual([]);
       expect(errors, "Navigation must not produce browser errors").toEqual([]);
-      expect(await page.evaluate((key) => localStorage.getItem(key), storageKey),
-        "Read-only navigation must preserve all fictional records and prior consent").toBe(snapshot);
+      if (!navigationState.allowLocalStorageChanges) {
+        expect(await page.evaluate((key) => localStorage.getItem(key), storageKey),
+          "Read-only navigation must preserve all fictional records and prior consent").toBe(snapshot);
+      }
       await expect(page.locator('a[href^="tel:"], a[href^="sms:"], a[href^="mailto:"]')).toHaveCount(0);
     }
   },

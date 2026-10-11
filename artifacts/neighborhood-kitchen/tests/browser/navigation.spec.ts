@@ -52,6 +52,75 @@ test("Discover → meal → cook profile survives real Back/Forward and reload",
   await expectCook(page, baseURL!);
 });
 
+test("report drafts warn on navigation and Back, survive hide/reopen, and ignore untouched forms", async ({ navigation: page, baseURL }) => {
+  await page.goto(new URL(mealPath, baseURL!).href);
+  await page.getByTestId("button-report-offer").click();
+  await page.getByTestId("button-back").click();
+  await expectDiscover(page, baseURL!); // Merely opening the default report is not a dirty change.
+  await page.goBack();
+  await expectMeal(page, baseURL!);
+
+  await page.getByTestId("button-report-offer").click();
+  const context = page.getByTestId("input-report-context");
+  await context.fill("Fictional context that should survive a collapsed panel.");
+  await page.getByTestId("button-report-offer").click();
+  await expect(context).toHaveCount(0);
+
+  await page.getByTestId("link-cook-profile").click();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toContainText("report edits");
+  await page.getByTestId("button-stay-editing").click();
+  await expectMeal(page, baseURL!);
+  await page.getByTestId("button-report-offer").click();
+  await expect(page.getByTestId("input-report-context")).toHaveValue("Fictional context that should survive a collapsed panel.");
+
+  await page.getByTestId("link-cook-profile").click();
+  await page.getByTestId("button-discard-leave").click();
+  await expectCook(page, baseURL!);
+
+  await page.getByTestId("button-report-cook").click();
+  const profileContext = page.getByTestId("input-report-context");
+  await profileContext.fill("Another fictional report draft.");
+  await page.goBack();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-stay-editing").click();
+  await expectCook(page, baseURL!);
+  await expect(profileContext).toHaveValue("Another fictional report draft.");
+  await page.goBack();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-discard-leave").click();
+  await expectMeal(page, baseURL!);
+});
+
+test("a dirty report warns before reload, and a local submission clears its navigation guard", async ({ navigation: page, baseURL, navigationState }) => {
+  await page.goto(new URL(mealPath, baseURL!).href);
+  await page.getByTestId("button-report-offer").click();
+  const context = page.getByTestId("input-report-context");
+  await context.fill("Fictional report context for reload warning.");
+
+  const dialogPromise = page.waitForEvent("dialog");
+  const reloadPromise = page.reload();
+  const dialog = await dialogPromise;
+  expect(dialog.type()).toBe("beforeunload");
+  await dialog.accept();
+  await reloadPromise;
+
+  navigationState.allowLocalStorageChanges = true;
+  await page.getByTestId("button-report-offer").click();
+  await page.getByTestId("input-report-context").fill("Fictional context for local submission.");
+  await page.getByTestId("button-submit-report").click();
+  await expect(page.getByTestId("text-report-done")).toContainText("saved locally");
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("neighborhood-kitchen-prototype-v1")!));
+  expect(stored.reports[0]).toMatchObject({
+    targetType: "offer",
+    targetId: mealId,
+    reason: "Inaccurate allergen information",
+    context: "Fictional context for local submission.",
+  });
+  await page.getByTestId("button-back").click();
+  await expectDiscover(page, baseURL!);
+});
+
 test("a fresh direct encoded meal link reloads and navigates within its artifact base", async ({ navigation: page, baseURL }) => {
   await page.goto(new URL(mealPath, baseURL!).href);
   await expectMeal(page, baseURL!);

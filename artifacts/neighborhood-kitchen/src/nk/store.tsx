@@ -7,7 +7,7 @@ import { prepareOfferSave, publicationMessage, reviseOffer, withdrawOfferConsent
 import { useLocation, useRouter } from "wouter";
 import { useHistoryState, usePathname } from "wouter/use-browser-location";
 import { parseScreenPath, relativeScreenPath, screenPath, type Nav, type NavOptions } from "./navigation";
-import { protectUnsavedNavigation } from "./leaveProtection";
+import { createUnsavedChangeRegistry, protectUnsavedNavigation } from "./leaveProtection";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export type { Nav } from "./navigation";
@@ -61,16 +61,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const location = relativeScreenPath(usePathname(), base);
   const historyState = useHistoryState<NavigationState | null>();
   const navigationKey = useRef(Date.now());
-  const unsaved = useRef<(() => boolean) | null>(null);
+  const [unsaved] = useState(() => createUnsavedChangeRegistry());
   const [leaveRequest, setLeaveRequest] = useState<{ leave: () => void } | null>(null);
   const protection = useRef<ReturnType<typeof protectUnsavedNavigation> | null>(null);
   const registerUnsavedChanges = useCallback((isDirty: () => boolean) => {
-    unsaved.current = isDirty;
-    return () => { if (unsaved.current === isDirty) unsaved.current = null; };
+    return unsaved.register(isDirty);
   }, []);
   useLayoutEffect(() => {
     const guard = protectUnsavedNavigation(
-      () => unsaved.current?.() ?? false,
+      () => unsaved.shouldWarn(),
       (leave) => setLeaveRequest((current) => current ?? { leave }),
     );
     protection.current = guard;
@@ -172,7 +171,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       <AlertDialogContent data-testid="dialog-unsaved-changes" className="max-w-[min(92vw,32rem)] rounded-xl bg-[#fffdf7] text-[#263c32]">
         <AlertDialogHeader>
           <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
-          <AlertDialogDescription>Your unsaved meal or application edits will be lost. Stay to keep editing, or discard them and leave this screen.</AlertDialogDescription>
+          <AlertDialogDescription>Your unsaved meal, application, or report edits will be lost. Stay to keep editing, or discard them and leave this screen.</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel data-testid="button-stay-editing">Stay and keep editing</AlertDialogCancel>

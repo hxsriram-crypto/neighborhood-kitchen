@@ -1,5 +1,20 @@
 type EntryState = { nkIndex?: number; [key: string]: unknown } | null;
 
+/** Track every mounted form independently so one registration cannot replace another. */
+export function createUnsavedChangeRegistry() {
+  const entries = new Map<symbol, () => boolean>();
+  return {
+    register(isDirty: () => boolean) {
+      const key = Symbol();
+      entries.set(key, isDirty);
+      return () => { entries.delete(key); };
+    },
+    shouldWarn() {
+      return [...entries.values()].some((isDirty) => isDirty());
+    },
+  };
+}
+
 /** Stop cancelled history traversals before Wouter can unmount the form. */
 export function protectUnsavedNavigation(shouldWarn: () => boolean, askToDiscard: (leave: () => void) => void) {
   let currentState: EntryState = history.state;
