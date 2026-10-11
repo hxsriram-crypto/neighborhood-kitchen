@@ -4,9 +4,9 @@ A lightweight web marketplace bringing neighbors together: residential cooks and
 
 ## Current authorization
 
-Only document review and clickable fictional-data wireframes are authorized. Do not begin functional development. Do not enable real contact, real participant notifications, or live food activity.
+The founder has explicitly approved the mobile, tablet, and desktop wireframes. The current stage is proposing the technical setup. Do not begin functional development or provision dependent services until technical choices and budget are explicitly approved. Do not enable real contact, real participant notifications, or live food activity.
 
-The founder must review and explicitly approve the wireframes before advancing. Unresolved product, design, architecture, vendor, cost, privacy, or scope choices require practical options and a recommendation followed by an explicit founder answer before dependent work. Proposed defaults are not approvals.
+Unresolved product, design, architecture, vendor, cost, privacy, or scope choices require practical options and a recommendation followed by an explicit founder answer before dependent work. Proposed defaults are not approvals. Start technical setup proposals by asking for missing budget ceiling, workspace/repository ownership, and technical preferences.
 
 ## Run & Operate
 

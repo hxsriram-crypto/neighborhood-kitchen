@@ -2,9 +2,9 @@
 
 ## Sources reviewed
 
-- [Business Plan v1.5](../.local/conversation-workspace/files/Neighborhood_Kitchen_Business_Plan_v1.5_1791685354736.md)
-- [Product Requirements v1.4](../.local/conversation-workspace/files/Neighborhood_Kitchen_PRD_v1.4_1791685354745.md)
-- [Development Handoff v1.6](../.local/conversation-workspace/files/Neighborhood_Kitchen_Development_Handoff_v1.6_1791685354745.md)
+- [Business Plan v1.5](../.local/conversation-workspace/files/attached_assets/Neighborhood_Kitchen_Business_Plan_v1.5_1791685354736.md)
+- [Product Requirements v1.4](../.local/conversation-workspace/files/attached_assets/Neighborhood_Kitchen_PRD_v1.4_1791685354745.md)
+- [Development Handoff v1.6](../.local/conversation-workspace/files/attached_assets/Neighborhood_Kitchen_Development_Handoff_v1.6_1791685354745.md)
 
 The uploaded originals are preserved unchanged in this project. All three documents are dated 10 October 2026.
 
@@ -39,4 +39,4 @@ Warm community styling, the named consumer/cook/operator screens, and expiration
 
 Not required for fictional wireframes: exact pilot geography and legal model, verification procedures, live policies and contact consent, timezone selection, field limits and image rules, guidance ownership, retention/deletion, insurance, support coverage, repository ownership, vendors, and spending ceilings.
 
-Wireframes use policy-neutral placeholders where those decisions would otherwise be implied. Technical design and functional development require separate review and approval.
+Wireframes use policy-neutral placeholders where those decisions would otherwise be implied. The founder has now approved the wireframes. The next stage is proposing the technical setup; functional development still requires explicit approval of the dependent technical choices and budget.

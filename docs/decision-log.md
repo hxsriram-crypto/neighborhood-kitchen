@@ -13,8 +13,10 @@ The founder supplied these answers in the wireframe-defaults form. No additional
 
 ## Authorization gates
 
+The founder explicitly approved the current mobile, tablet, and desktop wireframes. The wireframe-review gate is satisfied; the next stage is proposing the technical setup.
+
 - Wireframes are visual and simulated only.
-- Founder review and explicit wireframe approval are required before server-backed implementation.
+- Wireframe approval does not approve vendors, spending, provisioning, functional implementation, or live operation.
 - Technical choices, costs, service access, and repository ownership must be resolved before dependent setup.
 - Real AI requires separately approved providers, usage limits, and sample guidance.
 - Live food activity, real contact, and real participant notifications require a separate launch authorization and all PRD live gates.
