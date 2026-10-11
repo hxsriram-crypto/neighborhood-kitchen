@@ -1,6 +1,6 @@
 # Neighborhood Kitchen
 
-A responsive web-app concept for discovering upcoming home-cooked meals from eligible residential neighbors and contacting cooks outside the platform.
+A lightweight web marketplace bringing neighbors together: residential cooks and families who need a meal. Neighbors discover upcoming home-cooked meals and contact cooks outside the platform.
 
 ## Current authorization
 
@@ -37,6 +37,8 @@ _Populate as you build — short repo map plus pointers to the source-of-truth f
 _Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
 
 ## Product
+
+“We sell what we eat” is for cooks, not the marketplace's overall tagline. The presentation must clearly serve both cooks and families looking for a meal.
 
 Discovery and connection only. No in-app orders, reservations, inventory, payments, delivery, order messages, pickup confirmation, or completion tracking. Current screens and assistant interactions are simulated visual wireframes.
 
