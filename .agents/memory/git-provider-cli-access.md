@@ -21,4 +21,10 @@ The integration directory may report this source-control connection as unattache
 
 **Why:** These attachment reports disagreed while the Git pane reported no connected providers and Git transport still rejected authentication.
 
-**How to apply:** Refresh the connection identity after reconnection, follow the documented attachment flow once, and treat the actual Git operation as the success check. If both Git transport and the Git pane still fail, stop repeating reconnect/attachment operations and report the unresolved connection mismatch.
+**How to apply:** Refresh the connection identity after reconnection, follow the documented attachment flow once, and treat the actual Git operation as the success check. If both Git transport and the Git pane still fail, stop repeating reconnect/attachment operations; offer direct browser-based GitHub CLI authentication as a fallback or report the unresolved connection mismatch.
+
+Browser-based GitHub CLI authorization with its Git credential helper is a verified fallback when the managed provider connection remains unusable.
+
+**Why:** GitHub API access and Git transport both succeeded through that route despite the preceding managed-provider authentication failures.
+
+**How to apply:** Let the user complete the CLI browser authorization themselves, without sharing device codes or tokens in chat. Configure Git to use the CLI credential helper, keep authentication configuration outside source control, and verify actual repository access and private visibility before pushing.

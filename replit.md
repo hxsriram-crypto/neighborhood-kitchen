@@ -12,7 +12,7 @@ The founder approved React/Vite, the existing Express API, development PostgreSQ
 
 ## GitHub source repository
 
-The founder supplied `https://github.com/hxsriram-crypto/neighborhood-kitchen.git` as the new empty private repository. It is configured as `origin`; preserve the separate `gitsafe-backup` remote. Keep the repository private and do not force-push or overwrite unexpected remote content. GitHub access is currently blocked by authentication; no upload has been confirmed. Verify access, remote contents, and the pushed branch before claiming synchronization.
+The source repository is `https://github.com/hxsriram-crypto/neighborhood-kitchen`, configured as `origin`; preserve the separate `gitsafe-backup` remote. GitHub access and private visibility have been verified, and the remote `main` branch contains the project. Direct browser-based GitHub CLI login and its Git credential helper enabled access after the Replit provider connection failed. Keep credentials outside source control. Keep the repository private and do not force-push or overwrite unexpected remote content. Commit and push source changes explicitly; do not assume that editing files synchronizes them. GitHub synchronization does not publish the app or enable services. Verify the pushed branch before claiming synchronization.
 
 ## Run & Operate
 
