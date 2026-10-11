@@ -8,6 +8,8 @@ The founder has explicitly approved the mobile, tablet, and desktop wireframes. 
 
 Unresolved product, design, architecture, vendor, cost, privacy, or scope choices require practical options and a recommendation followed by an explicit founder answer before dependent work. Proposed defaults are not approvals. Start technical setup proposals by asking for missing budget ceiling, workspace/repository ownership, and technical preferences.
 
+The founder approved the baseline assumptions for preparing the technical proposal: reuse the scaffold, one source of truth, no new service-cost commitments before approval, and real AI after the core. Provider choices and a numeric spending ceiling are still unresolved.
+
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
@@ -55,3 +57,4 @@ _Populate as you build — sharp edges, "always run X before Y" rules._
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
 - [Document review and source-document links](docs/document-review.md)
 - [Founder decision log and authorization gates](docs/decision-log.md)
+- [Technical proposal, costs, setup checklist, and PRD-linked backlog](docs/technical-proposal.md) — recommendations only, not implementation approval

@@ -11,6 +11,17 @@
 
 The founder supplied these answers in the wireframe-defaults form. No additional conditions were supplied.
 
+## Founder-approved technical-proposal assumptions
+
+The founder approved using the recommended assumptions to prepare the technical proposal:
+
+- Reuse the existing TypeScript workspace/scaffolding as the baseline.
+- Keep one source of truth; use this Replit project as the working source unless an existing canonical repository is named.
+- No new service charges or commitments without explicit approval.
+- Defer real AI until the functional core is ready.
+
+These are proposal inputs only. They do not approve the provider recommendations in [the technical proposal](technical-proposal.md), a numeric budget, service provisioning, or functional development.
+
 ## Authorization gates
 
 The founder explicitly approved the current mobile, tablet, and desktop wireframes. The wireframe-review gate is satisfied; the next stage is proposing the technical setup.
