@@ -67,6 +67,12 @@ The founder explicitly approved the current mobile, tablet, and desktop wirefram
 - Real AI requires separately approved providers, usage limits, and sample guidance.
 - Live food activity, real contact, and real participant notifications require a separate launch authorization and all PRD live gates.
 
+## Cook contact-consent withdrawal in the local prototype
+
+The founder chose “Hide from discovery and block contact” on October 10, 2026.
+Withdrawal immediately removes the fictional offer from discovery and blocks its inert sample route, including an already-open detail view. An unavailable detail view may still show disclosures. Restoring consent requires explicit cook review; it does not override closure, expiry, moderation or eligibility.
+This decision applies to the browser-local fictional prototype only. It does not approve real contact or real-data retention.
+
 ## Open decisions
 
 The document review lists deferred decision areas. They are not approved defaults. Before affected work, state the question, explain its impact, offer practical options and a recommendation, wait for the founder's explicit answer, and add that answer here. Do not re-ask decisions already approved within their stated scope.

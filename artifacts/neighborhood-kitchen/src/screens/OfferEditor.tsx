@@ -3,15 +3,15 @@ import { Check, Minus, Plus, Trash2 } from "lucide-react";
 import { useStore } from "@/nk/store";
 import { SignInGate } from "@/nk/Gates";
 import { Btn, Field, Notice, OfferCard, PageTitle } from "@/nk/ui";
-import { blankOffer, deadlineMs, fmtDeadline, fmtDay, fmtLong, fmtWindow, pickupEndMs, pickupStartMs, validatePublish } from "@/nk/domain";
+import { blankOffer, CUSTOMER_REMINDER, deadlineMs, fmtDeadline, fmtDay, fmtLong, fmtStamp, fmtWindow, pickupEndMs, pickupStartMs, PREPARATION_STATEMENT, PREPARATION_VERSION, usdMinorUnits, validAllergens } from "@/nk/domain";
 import { ALLERGENS, DIETARY_TAGS, ME, type AllergenDecl, type Ingredient, type Offer, type Organic } from "@/nk/types";
 
 const ORG: Organic[] = ["unknown", "not stated", "cook-reported organic", "not organic"];
 
 export default function OfferEditor() {
-  const { data, now, nav, go, upsertOffer } = useStore();
+  const { data, now, nav, go, upsertOffer, withdrawContact } = useStore();
   const existing = nav.editorId ? data.offers.find((o) => o.id === nav.editorId && o.cookId === ME) : undefined;
-  const [f, setF] = useState<Offer>(() => existing ? JSON.parse(JSON.stringify(existing)) : { ...blankOffer(Date.now()), ...(nav.seed ?? {}) });
+  const [f, setF] = useState<Offer>(() => ({ ...(existing ? structuredClone(existing) : { ...blankOffer(Date.now()), ...(nav.seed ?? {}) }), commitment: false, preparationConfirmation: undefined }));
   const [errs, setErrs] = useState<string[]>([]);
   const [preview, setPreview] = useState(false);
   const [saved, setSaved] = useState("");
@@ -19,28 +19,30 @@ export default function OfferEditor() {
   const set = (p: Partial<Offer>) => { setF((x) => ({ ...x, ...p })); setSaved(""); };
   const setIng = (i: number, p: Partial<Ingredient>) => set({ ingredients: f.ingredients.map((x, k) => (k === i ? { ...x, ...p } : x)) });
   const status = existing?.status ?? "draft";
-  const stamp = (o: Offer): Offer => ({ ...o, cookId: ME, ingredients: o.ingredients.filter((i) => i.name.trim()), version: status === "draft" ? 0 : (existing?.version ?? 0) + 1, updatedAt: new Date().toISOString() });
+  const stamp = (o: Offer): Offer => ({ ...o, cookId: ME, ingredients: o.ingredients.filter((i) => i.name.trim()) });
   const saveDraft = () => {
     if (!f.title.trim()) { setErrs(["Add a meal name before saving."]); return; }
-    if (status === "published") { const e = validatePublish(f, me, Date.now()); if (e.length) { setErrs(e); return; } }
-    setErrs([]); upsertOffer(stamp(f), status === "published" ? "Changes saved to your live offer. If neighbors have arranged meals with you outside the app, tell them directly about material changes." : status === "closed" ? "Changes saved; offer stays closed." : "Draft saved.");
+    const e = upsertOffer(stamp(f), status === "published" ? "Changes saved to your published offer." : status === "closed" ? "Changes saved; offer stays closed." : "Draft saved.", f.commitment);
+    setErrs(e); if (e.length) return;
+    set({ commitment: false, preparationConfirmation: undefined });
     setSaved(status === "published" ? "Changes saved to the published offer." : "Draft saved.");
     if (!existing) setF((x) => ({ ...x }));
   };
   const publish = (reopen: boolean) => {
-    const e = validatePublish(f, me, Date.now());
+    const e = upsertOffer({ ...stamp(f), status: "published" }, reopen ? "Offer reopened by you and published." : "Offer published.", f.commitment);
     setErrs(e); if (e.length) return;
-    upsertOffer({ ...stamp(f), status: "published", version: (existing?.version ?? 0) + 1 }, reopen ? "Offer reopened by you and published." : "Offer published.");
     go("My cooking");
   };
   const pStart = pickupStartMs(f), pEnd = pickupEndMs(f), dl = deadlineMs(f);
-  const checks: [string, boolean][] = [["Meal name & description", !!f.title.trim() && !!f.description.trim()], ["Price and portion", Number(f.price) > 0 && !!f.portion.trim()], ["Ingredients & per-item sourcing/organic", f.ingredients.some((i) => i.name.trim())], ["Cuisine & handling", !!f.cuisine.trim() && !!f.handling.trim()], ["Pickup chronology", pEnd > pStart], ["Ordering deadline (future, ≤ pickup start)", dl > now && dl <= pStart], ["Phone-route consent", f.contactConsent], ["Same-day commitment", f.commitment]];
+  const checks: [string, boolean][] = [["Meal name & description", !!f.title.trim() && !!f.description.trim()], ["USD price (≤ 2 decimals) and portion", usdMinorUnits(f.price) !== null && !!f.portion.trim()], ["All nine allergen declarations", validAllergens(f)], ["Ingredients & per-item sourcing/organic", f.ingredients.some((i) => i.name.trim())], ["Cuisine & handling", !!f.cuisine.trim() && !!f.handling.trim()], ["Pickup chronology", pEnd > pStart], ["Ordering deadline (future, ≤ pickup start)", dl > now && dl <= pStart], ["Phone-route consent", f.contactConsent], ["Fresh same-day confirmation", f.commitment]];
   const blocked = me?.status !== "approved";
   return <div className="max-w-4xl"><PageTitle eyebrow="Offer editor · demo draft" title={existing ? "Edit your offer." : "Describe an upcoming meal."} sub="Validation runs on this device only. Published offers appear to neighbors in this browser, nothing is shared." />
     <SignInGate why="Sign in (simulated) to create or edit offers.">
       {nav.seed && !existing && <Notice tone="green">Draft fields came from the scripted helper using only what you typed. Nothing is saved or published yet; review everything below.</Notice>}
       {blocked && <Notice tone="red" testid="status-publish-blocked"><b>Publishing is blocked.</b> Cook eligibility is {me?.status === "none" ? "not applied" : me?.status}. You can still save drafts.</Notice>}
       {status === "closed" && <Notice tone="gold"><b>This offer is closed.</b> It will not reopen on its own. Fix any problems, then use Reopen offer.</Notice>}
+      {existing?.moderated && <Notice tone="red"><b>Suspended by the simulated operator.</b> Publication and reopening are blocked until restored. Discovery and contact remain blocked.</Notice>}
+      {existing && !existing.contactConsent && <Notice tone="gold">Contact consent is withdrawn. This offer is hidden from discovery and the sample route is blocked. To restore consent, review the offer, check consent and preparation, then save changes or reopen.</Notice>}
       {errs.length > 0 && <Notice tone="red" testid="errors-editor"><b>Not ready yet:</b><ul className="ml-4 list-disc">{errs.map((x) => <li key={x}>{x}</li>)}</ul></Notice>}
       {saved && <Notice tone="green" testid="text-saved">{saved}</Notice>}
       <div className="grid gap-5 lg:grid-cols-[1fr_300px]"><section className="nk-card nk-content">
@@ -55,6 +57,7 @@ export default function OfferEditor() {
           <Btn testid="button-add-ingredient" icon={<Plus size={14} />} onClick={() => set({ ingredients: [...f.ingredients, { name: "", source: "", organic: "unknown" }] })}>Add ingredient</Btn><p className="mt-2 text-[11px] text-[#7c897f]">Frozen ingredients are fine to list; the completed meal must not be frozen.</p></div>
         <div className="mb-4"><p className="nk-label">Nine major allergen declarations · per allergen</p><div className="grid gap-2 sm:grid-cols-3">{ALLERGENS.map((a, k) => <div key={a}><label className="nk-label !mb-1" htmlFor={"editor-allergen-" + k}>{a}</label><select id={"editor-allergen-" + k} data-testid={"select-allergen-" + a} className="nk-input !py-2" value={f.allergens[a] ?? "unknown"} onChange={(e) => set({ allergens: { ...f.allergens, [a]: e.target.value as AllergenDecl } })}><option value="unknown">Unknown / not stated</option><option value="present">Present in listed ingredients</option><option value="absent">Not present · cook-declared</option></select></div>)}</div><p className="mt-2 text-[11px] text-[#7c897f]">Unknown is explicit; it does not mean absent or allergy-safe.</p></div>
         <div className="grid gap-3 sm:grid-cols-2"><Field label="Kitchen cross-contact" id="cross-contact"><select id="cross-contact" className="nk-input" value={f.crossContact} onChange={(e) => set({ crossContact: e.target.value as Offer["crossContact"] })}><option value="unknown">Unknown</option><option value="known">Describe known cross-contact</option><option value="none">No known cross-contact reported</option></select></Field><Field label="Pickup condition (hot or chilled)" id="pickup-condition"><select id="pickup-condition" data-testid="select-condition" className="nk-input" value={f.condition} onChange={(e) => set({ condition: e.target.value as Offer["condition"] })}><option>Chilled</option><option>Hot</option></select></Field></div>
+        <Field label="Other allergen disclosures · cook-reported (blank = not stated)" id="other-allergens"><textarea id="other-allergens" data-testid="input-other-allergens" className="nk-input" rows={2} value={f.otherAllergens ?? ""} onChange={(e) => set({ otherAllergens: e.target.value })} /></Field>
         {f.crossContact === "known" && <Field label="Cross-contact details" id="cross-note"><textarea id="cross-note" className="nk-input" rows={2} value={f.crossContactNote} onChange={(e) => set({ crossContactNote: e.target.value })} /></Field>}
         <Field label="Food-specific handling instructions" id="handling-instructions"><textarea id="handling-instructions" data-testid="input-handling" className="nk-input" rows={2} value={f.handling} onChange={(e) => set({ handling: e.target.value })} /></Field>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -69,7 +72,10 @@ export default function OfferEditor() {
         <Field label="Contact route" id="contact-route"><select id="contact-route" className="nk-input" disabled><option>Phone · fictional sample</option></select></Field>
         <div className="mb-4 rounded-xl border border-[#e5e9e0] p-4"><p className="nk-label">Family-care promise · cook statement</p><p className="text-sm leading-5 text-[#65746a]">“I make this meal with the same care and ingredients I use for my own family.” A community promise, not a safety or nutrition claim.</p></div>
         <label className="mb-3 flex items-start gap-3 text-sm leading-5"><input id="contact-consent" data-testid="check-contact-consent" type="checkbox" className="mt-1 accent-[#365b4b]" checked={f.contactConsent} onChange={(e) => set({ contactConsent: e.target.checked })} />I consent to display the fictional phone contact route to signed-in neighbors who consent.</label>
-        <label className="mb-5 flex items-start gap-3 text-sm leading-5"><input id="same-day-commitment" data-testid="check-commitment" type="checkbox" className="mt-1 accent-[#365b4b]" checked={f.commitment} onChange={(e) => set({ commitment: e.target.checked })} /><span>I will prepare this meal on the day of pickup and will not freeze the completed meal.<span className="block text-xs text-[#818b82]">Unchecked by default. Changing the pickup date clears this declaration. {f.pickupDate ? "Planned for " + fmtLong(f.pickupDate) + " (cook-reported)." : "Advance publishing is not advance preparation."}</span></span></label>
+        {existing?.contactConsent && <div className="mb-4"><Btn testid="button-withdraw-contact" onClick={() => { withdrawContact(existing.id); set({ contactConsent: false }); setErrs([]); }}>Withdraw cook contact consent now</Btn><p className="mt-2 text-xs text-[#65746a]">Immediate: hides the saved offer and blocks its sample route without saving other editor changes. {CUSTOMER_REMINDER}</p></div>}
+        <label className="mb-5 flex items-start gap-3 text-sm leading-5"><input id="same-day-commitment" data-testid="check-commitment" type="checkbox" className="mt-1 accent-[#365b4b]" checked={f.commitment} onChange={(e) => set({ commitment: e.target.checked })} /><span>{PREPARATION_STATEMENT}<span className="block text-xs text-[#818b82]">Statement {PREPARATION_VERSION}. Confirm explicitly for every publication, reopening or published edit. Opening the editor, saving or changing pickup date clears the checkbox. Confirmation time is recorded on successful publication only. {f.pickupDate ? "Planned for " + fmtLong(f.pickupDate) + " (cook-reported)." : "Advance publishing is not advance preparation."}</span></span></label>
+        <Notice>{CUSTOMER_REMINDER}</Notice>
+        {existing && <details className="mb-4" data-testid="panel-revisions"><summary className="cursor-pointer text-sm font-semibold">Local fictional offer revisions ({existing.revisions?.length ?? 0})</summary><p className="my-2 text-xs">Offer content only; no order or customer history. Revisions from before this feature are not reconstructed.</p>{existing.preparationConfirmation && <p className="mb-2 text-xs">Latest preparation confirmation: {existing.preparationConfirmation.statementVersion} · {fmtStamp(existing.preparationConfirmation.confirmedAt)} · offer v{existing.preparationConfirmation.offerVersion} · pickup {existing.preparationConfirmation.pickupDate}</p>}{[...(existing.revisions ?? [])].reverse().map((r) => <details key={r.version} className="mb-2 rounded border p-2"><summary className="cursor-pointer text-xs">v{r.version} · {fmtStamp(r.updatedAt)} · {r.title}</summary><pre className="mt-2 whitespace-pre-wrap break-all text-[11px]">{JSON.stringify(r, null, 2)}</pre></details>)}</details>}
         <div className="flex flex-wrap gap-2"><Btn testid="button-save-draft" onClick={saveDraft}>{status === "draft" ? "Save draft" : "Save changes"}</Btn><Btn testid="button-preview" onClick={() => setPreview(!preview)}>{preview ? "Hide preview" : "Preview"}</Btn>
           {status === "closed" ? <Btn testid="button-reopen" variant="solid" disabled={blocked} onClick={() => publish(true)}>Reopen offer</Btn> : status === "draft" ? <Btn testid="button-publish" variant="solid" disabled={blocked} onClick={() => publish(false)}>Publish offer</Btn> : null}
           <Btn variant="plain" onClick={() => go("My cooking")}>Back to My cooking</Btn></div>

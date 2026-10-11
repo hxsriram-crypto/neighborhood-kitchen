@@ -23,15 +23,34 @@ Explore the approved marketplace design with working browser-local interactions 
 7. **Try the helper:** search with a meal preference, try its fallback, or request a draft and finish it in the normal editor.
 8. **Check persistence:** reload after saving a change. To start over, use the confirmed reset in Profile. Reset affects this prototype's sample data only.
 
+### Cook consent, disclosures and publication
+
+- **Other allergens:** edit the additional cook-reported disclosure in the offer editor. A blank entry means unknown/not stated, not “none” or allergy-safe.
+- **Validation:** all nine major allergens must explicitly be `unknown`, `present` or `absent`. USD sample prices must be positive decimal values with at most two decimal places; unsupported precision is rejected, never rounded for publication.
+- **Preparation:** explicitly check the same-day/no-freezing statement for every publication, reopening and published edit. The editor starts unchecked, saving clears it, and changing the pickup date clears it. A successful action stores statement version, confirmation time, pickup date and offer revision. Existing older local records without that metadata are not given invented confirmations.
+- **Withdrawal:** “Withdraw contact consent” acts immediately on the saved fictional offer, independently of unsaved editor changes or publication validation. Discovery, cook profiles, helper matching and contact all use the same availability rule. An unavailable detail preview can still show disclosures, but never the sample phone route. To restore consent, review the editor and save with consent and a fresh preparation confirmation; closing, expiry, eligibility and moderation still apply independently.
+- **Reopening:** My cooking opens the editor for review, rather than reusing the previous preparation checkbox. Moderated offers cannot publish/reopen; the rejection explains that the simulated operator must restore them first.
+- **Revisions:** expand local fictional offer revisions in the editor to inspect prior offer-content snapshots. Successful saves, closure, withdrawal and moderation preserve earlier content. Only changes made since this feature are available; no earlier history is reconstructed. There is no order/customer history or notification system. The consumer detail shows last-updated time and current revision.
+- **External arrangements:** cooks are reminded on edit, publication, closure, withdrawal and reopening to inform neighbors they arranged with outside the platform. Nothing contacts anyone automatically.
+
 Navigation is inside the app; screens do not have individual URLs, and browser Back does not step through them.
 
 ## Verification
 
-The prototype has passed its targeted typecheck/build, desktop/mobile render checks, and six automated domain/persistence checks. These do not constitute verification of real sign-in, file storage, multi-user security, real AI, or live operation.
+The consent/publication changes have passed their targeted typecheck/build and fourteen automated checks (six original domain/persistence checks and eight publication regressions). These do not constitute verification of real sign-in, file storage, multi-user security, real AI, or live operation.
+
+A single browser walkthrough verified the fictional flatbread lifecycle: rejection of excess price precision, other-allergen display, fresh preparation checks, prior revision content, inert phone disclosure, immediate consent withdrawal, explicit restoration, closure/reopening, reload persistence and moderated reopening rejection. The walkthrough also found a negative-margin mobile navigation overflow; its spacing was corrected. Fresh post-reload browser error capture was empty. A Vite hot-update warning during editing required re-entering the initial test inputs; the subsequent lifecycle checks passed.
 
 Run domain/persistence checks from the workspace root:
 
 ```sh
-pnpm --filter @workspace/api-server exec esbuild ../neighborhood-kitchen/src/nk/prototype.test.ts --bundle --platform=node --format=esm --outfile=/tmp/neighborhood-kitchen-prototype.test.mjs
-node --test /tmp/neighborhood-kitchen-prototype.test.mjs
+pnpm --filter @workspace/api-server exec esbuild ../neighborhood-kitchen/src/nk/prototype.test.ts ../neighborhood-kitchen/src/nk/publication.test.ts --bundle --platform=node --format=esm --outdir=/tmp/neighborhood-kitchen-tests
+node --test /tmp/neighborhood-kitchen-tests/*.js
+```
+
+Build checks outside the managed workflow need the artifact's non-secret routing configuration:
+
+```sh
+PORT=23820 BASE_PATH=/ pnpm --filter @workspace/neighborhood-kitchen run build
+pnpm --filter @workspace/neighborhood-kitchen run typecheck
 ```

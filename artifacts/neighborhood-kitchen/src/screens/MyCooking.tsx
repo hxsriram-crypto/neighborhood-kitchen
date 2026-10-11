@@ -1,17 +1,15 @@
-import { useState } from "react";
 import { MessageCircle, Plus } from "lucide-react";
 import { useStore } from "@/nk/store";
 import { SignInGate } from "@/nk/Gates";
 import { Badge, Btn, Notice, PageTitle } from "@/nk/ui";
-import { availability, fmtDay, fmtDeadline, fmtStamp, fmtWindow, type Availability } from "@/nk/domain";
+import { availability, CUSTOMER_REMINDER, fmtDay, fmtDeadline, fmtStamp, fmtWindow, type Availability } from "@/nk/domain";
 import { ME } from "@/nk/types";
 
-const LABEL: Record<Availability, string> = { live: "Published · live", draft: "Draft", closed: "Closed", expired: "Expired", ineligible: "Hidden · not eligible", moderated: "Suspended by operator" };
+const LABEL: Record<Availability, string> = { live: "Published · live", draft: "Draft", closed: "Closed", expired: "Expired", ineligible: "Hidden · not eligible", moderated: "Suspended by operator", "consent-withdrawn": "Hidden · contact consent withdrawn" };
 
 export default function MyCooking() {
-  const { data, now, go, closeOffer, reopenOffer } = useStore();
+  const { data, now, go, closeOffer, withdrawContact } = useStore();
   const me = data.cooks.find((c) => c.id === ME)!;
-  const [errs, setErrs] = useState<Record<string, string[]>>({});
   const mine = data.offers.filter((o) => o.cookId === ME).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   return <div><PageTitle eyebrow="Cook workspace" title="My cooking" sub="For cooks: “We Sell What We Eat” is a community promise about care, not a nutrition or safety claim." />
     <SignInGate why="Sign in (simulated) to manage your offers.">
@@ -24,10 +22,12 @@ export default function MyCooking() {
         <p className="mt-2 text-sm text-[#6b786e]">{o.pickupDate ? "Pickup " + fmtDay(o.pickupDate) + " · " + fmtWindow(o) : "Pickup not set"}</p>
         <p className="mt-1 text-xs text-[#7c897f]">{o.deadlineDate ? "Contact/order by " + fmtDeadline(o) : "Deadline not set"}</p>
         {av === "expired" && <p className="mt-2 text-xs text-[#806b41]">Deadline passed; absent from consumer discovery. Edit the deadline to extend explicitly.</p>}
-        {errs[o.id]?.length ? <div className="mt-3"><Notice tone="red"><b>Cannot reopen yet:</b><ul className="ml-4 list-disc">{errs[o.id].map((x) => <li key={x}>{x}</li>)}</ul><button className="mt-1 font-semibold underline" onClick={() => go("Offer editor", { editorId: o.id })}>Fix in editor</button></Notice></div> : null}
+        {o.moderated && <p className="mt-2 text-xs text-[#806b41]">Publication and reopening blocked until the simulated operator restores this offer.</p>}
+        {o.status !== "draft" && <p className="mt-2 text-xs text-[#68776c]">{CUSTOMER_REMINDER}</p>}
         <div className="mt-4 flex flex-wrap gap-2"><Btn testid={"button-edit-" + o.id} onClick={() => go("Offer editor", { editorId: o.id })}>{o.status === "draft" ? "Continue draft" : "Edit offer"}</Btn><Btn variant="plain" onClick={() => go("Offer detail", { offerId: o.id })}>Preview</Btn>
           {o.status === "published" && <Btn testid={"button-close-" + o.id} variant="plain" onClick={() => closeOffer(o.id)}>Close early</Btn>}
-          {o.status === "closed" && <Btn testid={"button-reopen-" + o.id} variant="solid" onClick={() => setErrs({ ...errs, [o.id]: reopenOffer(o.id) })}>Reopen offer</Btn>}</div></div>; })}</div>}
+          {o.contactConsent && <Btn testid={"button-withdraw-" + o.id} variant="plain" onClick={() => withdrawContact(o.id)}>Withdraw contact consent</Btn>}
+          {o.status === "closed" && <Btn testid={"button-reopen-" + o.id} variant="solid" onClick={() => go("Offer editor", { editorId: o.id })}>Review & reopen</Btn>}</div></div>; })}</div>}
       <p className="mt-5 text-xs text-[#879188]">No order, payment, availability count, customer history or completion data is tracked here. Offers never reopen automatically.</p>
     </SignInGate></div>;
 }
