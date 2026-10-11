@@ -9,4 +9,10 @@ Do not treat an accepted or “healthy” Git-provider connection as proof that 
 
 **How to apply:** Check the intended operation before claiming success. Use documented provider mechanisms without exposing credentials. If API creation remains unavailable, ask the user to create an empty private repository and supply its non-secret URL, then verify whether connected Git transport can push. For an authentication rejection, follow the integration authorization-recovery flow rather than assuming a healthy status proves access. Preserve Replit's existing backup remote. Do not ask for passwords or tokens in chat.
 
-If the Git-provider recovery prompt itself refuses to open, stop retrying the same connection flow. Consult Replit's current Git-provider recovery documentation and direct the user to the account-level Git Providers settings, explaining that changing that connection is not repository-specific.
+If the Git-provider recovery prompt itself refuses to open, stop retrying the same connection flow. Use current documentation and the user's actual settings screen instead of repeatedly asking them to reconnect.
+
+The settings UI shown for this project manages GitHub under Workspace Settings → Integrations, in the GitHub card labeled “Source Control.” Do not insist that a separate “Account settings → Git Providers” menu must exist.
+
+**Why:** A user-provided settings screenshot showed the Source Control card as Active under Integrations; earlier documentation results used a different menu label and led to unhelpful repeated instructions.
+
+**How to apply:** Prefer the observed UI labels over stale navigation instructions. An Active card confirms the connection is configured, not that Git transport can authenticate. When it remains active after reconnection but command-line access fails, try the project Git pane rather than repeating the same reconnection steps.
