@@ -4,12 +4,16 @@ import { ME } from "./types";
 import { load, resetStorage, save, type StorageStatus } from "./storage";
 import { CUSTOMER_REMINDER, deadlineMs } from "./domain";
 import { prepareOfferSave, publicationMessage, reviseOffer, withdrawOfferConsent } from "./publication";
+import { useLocation, useRouter } from "wouter";
+import { useHistoryState, usePathname } from "wouter/use-browser-location";
+import { parseScreenPath, relativeScreenPath, screenPath, type Nav, type NavOptions } from "./navigation";
 
-export interface Nav { screen: Screen; offerId?: string; cookId?: string; editorId?: string; editorKey: number; seed?: Partial<Offer>; mode?: string }
+export type { Nav } from "./navigation";
+interface NavigationState { nk?: { key: number; seed?: Partial<Offer> } }
 export interface Flash { id: number; text: string; tone: "green" | "red" | "gold" }
 interface Store {
   data: Data; now: number; storage: StorageStatus; nav: Nav; flash: Flash | null; clearFlash: () => void;
-  go: (screen: Screen, o?: { offerId?: string; cookId?: string; editorId?: string; seed?: Partial<Offer>; mode?: string }) => void;
+  go: (screen: Screen, o?: NavOptions) => void;
   signIn: () => void; signOut: () => void; setOperator: (v: boolean) => void; setPhoneConsent: (v: boolean) => void;
   upsertOffer: (o: Offer, msg: string, confirmed?: boolean) => string[]; closeOffer: (id: string) => void;
   withdrawContact: (id: string) => void;
@@ -28,7 +32,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [storage, setStorage] = useState<StorageStatus>(boot.status);
   const storageRef = useRef(boot.status);
   const [now, setNow] = useState(Date.now());
-  const [nav, setNav] = useState<Nav>({ screen: "Discover", editorKey: 0 });
+  const [, navigate] = useLocation();
+  const { base } = useRouter();
+  const location = relativeScreenPath(usePathname(), base);
+  const historyState = useHistoryState<NavigationState | null>();
+  const navigationKey = useRef(Date.now());
+  const nav: Nav = {
+    ...parseScreenPath(location),
+    seed: historyState?.nk?.seed,
+    editorKey: location + ":" + (historyState?.nk?.key ?? 0),
+  };
   const [flash, setFlash] = useState<Flash | null>(null);
   const flashTimer = useRef<number | undefined>(undefined);
 
@@ -37,6 +50,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setFlash({ id: Date.now(), text, tone });
     flashTimer.current = window.setTimeout(() => setFlash(null), 7000);
   }, []);
+
+  const go = (screen: Screen, options: NavOptions = {}) => {
+    const path = screenPath(screen, options);
+    // Clicking the current tab must not create duplicate Back steps.
+    if (path === location && !options.seed) return;
+    navigate(path, { state: { nk: { key: ++navigationKey.current, seed: options.seed } } });
+  };
+
+  useEffect(() => {
+    setNow(Date.now());
+    window.scrollTo({ top: 0 });
+  }, [location, historyState]);
 
   const commit = useCallback((fn: (d: Data) => Data, msg: string) => {
     const next = fn(dataRef.current);
@@ -67,7 +92,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const store: Store = {
     data, now, storage, nav, flash, clearFlash: () => setFlash(null),
-    go: (screen, o = {}) => { setNav((n) => ({ screen, offerId: o.offerId, cookId: o.cookId, editorId: o.editorId, seed: o.seed, mode: o.mode, editorKey: n.editorKey + 1 })); window.scrollTo({ top: 0 }); },
+    go,
     signIn: () => commit((d) => ({ ...d, signedIn: true }), "Signed in as the simulated neighbor Alex Larkin (not real authentication)."),
     signOut: () => commit((d) => ({ ...d, signedIn: false, phoneConsent: false }), "Signed out of the simulated identity."),
     setOperator: (v) => commit((d) => ({ ...d, operator: v }), v ? "Simulated operator mode on (not security)." : "Simulated operator mode off."),
@@ -93,7 +118,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     resetAll: () => {
       const r = resetStorage(Date.now());
       dataRef.current = r.data; setData(r.data); storageRef.current = r.status; setStorage(r.status);
-      setNav((n) => ({ screen: "Discover", editorKey: n.editorKey + 1 }));
+      navigate("/", { replace: true, state: null });
       notify(r.status === "ok" ? "Sample data reset. Stored again in this browser only." : "Sample data reset in memory, but browser storage is unavailable so nothing is saved.", r.status === "ok" ? "green" : "gold");
     },
   };

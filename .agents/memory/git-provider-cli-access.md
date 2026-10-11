@@ -28,3 +28,9 @@ Browser-based GitHub CLI authorization with its Git credential helper is a verif
 **Why:** GitHub API access and Git transport both succeeded through that route despite the preceding managed-provider authentication failures.
 
 **How to apply:** Let the user complete the CLI browser authorization themselves, without sharing device codes or tokens in chat. Configure Git to use the CLI credential helper, keep authentication configuration outside source control, and verify actual repository access and private visibility before pushing.
+
+If GitHub CLI repository access works but ordinary Git transport still rejects authentication after `gh auth setup-git`, explicitly select the CLI helper for that Git command: `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' <operation>`.
+
+**Why:** In this environment, setup enabled a fetch but a subsequent ordinary push still failed; per-command helper selection successfully pushed and verified the remote branch without exposing credentials.
+
+**How to apply:** Use this only with an already authorized CLI, and clear inherited helpers for the command as shown. Confirm private visibility and preserve unexpected remote history before pushing; do not force-push or inspect credential values.

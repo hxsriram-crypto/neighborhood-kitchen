@@ -1,14 +1,14 @@
 import { ArrowLeft, Sprout } from "lucide-react";
 import { useStore } from "@/nk/store";
 import { availability, canDiscloseContact, cookName, fmtDeadline, fmtLong, fmtDay, fmtStamp, fmtWindow, ingredientLine, money } from "@/nk/domain";
-import { ALLERGENS } from "@/nk/types";
+import { ALLERGENS, ME } from "@/nk/types";
 import { Avatar, Btn, MealArt, Notice } from "@/nk/ui";
 import { ReportForm } from "@/nk/ReportForm";
 
 export default function OfferDetail() {
   const { data, now, nav, go, signIn, setPhoneConsent } = useStore();
   const o = data.offers.find((x) => x.id === nav.offerId);
-  if (!o) return <div className="max-w-xl"><Notice tone="red">This offer could not be found.</Notice><Btn variant="solid" onClick={() => go("Discover")}>Back to Discover</Btn></div>;
+  if (!o || (o.status === "draft" && (!data.signedIn || o.cookId !== ME))) return <div className="max-w-xl"><Notice tone="red">This offer could not be found.</Notice><Btn variant="solid" onClick={() => go("Discover")}>Back to Discover</Btn></div>;
   const cook = data.cooks.find((c) => c.id === o.cookId);
   const av = availability(o, data.cooks, now);
   const live = av === "live";
