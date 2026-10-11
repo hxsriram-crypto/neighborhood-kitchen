@@ -7,6 +7,9 @@ import { ResetPanel } from "@/nk/ResetPanel";
 export default function Profile() {
   const { data, now, nav, go, signIn, signOut, setPhoneConsent, setOperator, storage } = useStore();
   const cook = nav.cookId ? data.cooks.find((c) => c.id === nav.cookId) : undefined;
+  if (nav.cookId && !cook) {
+    return <div className="max-w-xl"><Notice tone="red" testid="status-cook-not-found">This cook profile could not be found.</Notice><Btn variant="solid" onClick={() => go("Discover")}>Back to Discover</Btn></div>;
+  }
   if (cook) {
     const offers = data.offers.filter((o) => o.cookId === cook.id && isLive(o, data.cooks, now)).sort(sortOffers);
     return <div className="max-w-4xl"><PageTitle eyebrow="Neighbor profile" title="A familiar face, a good meal." sub="A fictional profile shown to illustrate neighborhood discovery." />

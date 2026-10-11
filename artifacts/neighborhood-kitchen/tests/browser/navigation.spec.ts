@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import {
-  test, expect, mealId, mealTitle, cookName, mealPath, cookPath, unavailable,
+  test, expect, mealId, mealTitle, cookName, mealPath, cookPath, missingCookPath, unavailable,
 } from "./navigation.fixture";
 
 async function expectPath(page: Page, baseURL: string, path: string) {
@@ -181,6 +181,28 @@ for (const id of ["fictional-does-not-exist", "fictional-private-draft"]) {
     await expectDiscover(page, baseURL!);
   });
 }
+
+test("a missing direct cook profile stays unavailable on reload and history traversal", async ({ navigation: page, baseURL }) => {
+  const assertMissing = async () => {
+    await expectPath(page, baseURL!, missingCookPath);
+    await expect(page.getByTestId("status-cook-not-found")).toHaveText("This cook profile could not be found.");
+    await expect(page.getByRole("heading", { name: "Neighbor and cook, one account." })).toHaveCount(0);
+    await expect(page.getByTestId("text-cook-name")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Back to Discover", exact: true })).toBeVisible();
+  };
+  await page.goto(baseURL!);
+  await expectDiscover(page, baseURL!);
+  await page.goto(new URL(missingCookPath, baseURL!).href);
+  await assertMissing();
+  await page.reload();
+  await assertMissing();
+  await page.getByRole("button", { name: "Back to Discover", exact: true }).click();
+  await expectDiscover(page, baseURL!);
+  await page.goBack();
+  await assertMissing();
+  await page.goForward();
+  await expectDiscover(page, baseURL!);
+});
 
 for (const path of ["meals/"]) {
   test(`absent meal ID renders not-found without crashing: ${path}`, async ({ navigation: page, baseURL }) => {

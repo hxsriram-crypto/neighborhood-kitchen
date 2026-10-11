@@ -29,8 +29,9 @@ Every case runs under both bases. Coverage:
 - Fresh direct meal links, reload, and the in-app Back to Discover button.
 - Direct/reloaded closed, already-expired, consent-withdrawn, moderated, and
   ineligible meals keep warnings and block contact even with prior neighbor consent.
-- Missing meals and private drafts stay hidden; absent IDs show not-found
-  and recover with browser history.
+- Missing meals, private drafts, and cook profiles stay unavailable instead of
+  falling through to another screen; the in-app back route and browser history
+  recover safely.
 
 This does not advance the clock across cutoffs, test sorting, or cover helper
 restrictions. Failure traces/screenshots and disposable builds stay under the

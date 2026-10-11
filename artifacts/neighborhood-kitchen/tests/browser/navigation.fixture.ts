@@ -11,6 +11,8 @@ export const mealTitle = "Fictional navigation soup";
 export const cookName = "Fictional Navigation Cook";
 export const mealPath = `meals/${encodeURIComponent(mealId)}`;
 export const cookPath = `cooks/${encodeURIComponent(cookId)}`;
+export const missingCookId = "fictional missing cook / 50%";
+export const missingCookPath = `cooks/${encodeURIComponent(missingCookId)}`;
 
 const data = makeSeed(clock);
 data.signedIn = true;
