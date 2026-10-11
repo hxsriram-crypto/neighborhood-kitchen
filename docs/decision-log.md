@@ -53,6 +53,8 @@ Build a playable, fictional-data, browser-local prototype from the approved wire
 
 ## Authorization gates
 
+The founder chose “Keep the temporary preview URL for now” when offered frontend-only publishing preparation. Do not prepare or enable publishing based on the earlier request for a shareable URL; revisit only when requested.
+
 The founder explicitly approved the current mobile, tablet, and desktop wireframes and the recommended core technical choices, and subsequently authorized a browser-local playable prototype. Service-backed setup and implementation remain gated.
 
 - Wireframes are visual and simulated only.
