@@ -112,15 +112,15 @@ The publication validator accepts a moderated offer, and reopening uses that val
 
 **Evidence:** `src/nk/domain.ts`, `src/nk/store.tsx`; temporary moderated-publication probe.
 
-### G6 — “Direct links” are not actual shareable meal URLs
+### G6 — “Direct links” are not actual shareable meal URLs — addressed locally
 
 **Priority: improve before broader prototype feedback. PRD: WIRE02, EXP05, T06.**
 
-Screens are selected through React state under the root route. A meal cannot be opened through its own URL, reload returns to Discover, and browser Back does not follow the in-app journey. The expired-detail state exists, but the full expired-direct-link scenario cannot be exercised.
+The original review found screens selected through React state under the root route. The local prototype now uses artifact-base-safe `/meals/<id>` URLs and routes for other screens. Reload/direct entry resolve the current browser-local record; browser Back/Forward follows screen navigation without resetting sample data. Unavailable meal links retain disclosure previews but block contact. Unknown IDs fail safely, and drafts require the simulated owner identity. Copied links do not share local edits or provide real multi-user access.
 
 **Next-build acceptance:** base-path-safe meal URLs; reload/deep-link handling for active, expired, closed, and unavailable offers; coherent browser Back behavior. These changes need no real accounts or paid service.
 
-**Evidence:** `src/App.tsx`, `src/nk/store.tsx`; the documented prototype limitation.
+**Evidence:** `src/App.tsx`, `src/nk/store.tsx`, `src/nk/navigation.ts`, `src/nk/navigation.test.ts`; the documented browser-local limitations remain.
 
 ### G7 — Some discovery details do not match the PRD
 

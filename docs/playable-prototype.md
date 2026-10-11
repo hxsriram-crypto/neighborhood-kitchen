@@ -33,7 +33,7 @@ Explore the approved marketplace design with working browser-local interactions 
 - **Revisions:** expand local fictional offer revisions in the editor to inspect prior offer-content snapshots. Successful saves, closure, withdrawal and moderation preserve earlier content. Only changes made since this feature are available; no earlier history is reconstructed. There is no order/customer history or notification system. The consumer detail shows last-updated time and current revision.
 - **External arrangements:** cooks are reminded on edit, publication, closure, withdrawal and reopening to inform neighbors they arranged with outside the platform. Nothing contacts anyone automatically.
 
-Navigation is inside the app; screens do not have individual URLs, and browser Back does not step through them.
+Navigation uses artifact-base-prefixed URLs. Meals open at `/meals/<fictional-offer-id>` (for example `/meals/flatbread`), and reload, direct entry, browser Back and Forward retain the selected screen. Profiles, cooking, editors, the helper and simulated operator screens also have routes. A copied link selects a record in the recipient's own browser-local sample data; it does not share edits or enable a service. Unknown meal IDs show a not-found message. Draft previews require the simulated owner identity. Expired, closed, consent-withdrawn, moderated and ineligible links retain disclosures but block contact, even with previously recorded neighbor consent. Helper draft fields remain local history state, not URL parameters; unsaved form edits are not promised to survive leaving the screen.
 
 ## Verification
 
@@ -41,10 +41,12 @@ The consent/publication changes have passed their targeted typecheck/build and f
 
 A single browser walkthrough verified the fictional flatbread lifecycle: rejection of excess price precision, other-allergen display, fresh preparation checks, prior revision content, inert phone disclosure, immediate consent withdrawal, explicit restoration, closure/reopening, reload persistence and moderated reopening rejection. The walkthrough also found a negative-margin mobile navigation overflow; its spacing was corrected. Fresh post-reload browser error capture was empty. A Vite hot-update warning during editing required re-entering the initial test inputs; the subsequent lifecycle checks passed.
 
+The URL/navigation change passed the targeted typecheck/build and eighteen domain/persistence/publication/navigation checks. One isolated browser pass verified meal reload, direct entry, Back/Forward through meal and cook-profile screens, active contact gates and inert plain text, and expired, closed, consent-withdrawn, moderated and ineligible detail links with contact blocked even after neighbor consent. Missing records, signed-out draft privacy, and simulated editor/operator gates also passed. No app JavaScript errors were observed, and the tester restored its original local sample data. An extra malformed UTF-8 URL (`/meals/%E0%A4%A`) was rejected before the app loaded (browser protocol error; direct Vite request returned 404), so its app-rendered not-found state was not browser-verified; the parser's safe handling is covered by a unit check.
+
 Run domain/persistence checks from the workspace root:
 
 ```sh
-pnpm --filter @workspace/api-server exec esbuild ../neighborhood-kitchen/src/nk/prototype.test.ts ../neighborhood-kitchen/src/nk/publication.test.ts --bundle --platform=node --format=esm --outdir=/tmp/neighborhood-kitchen-tests
+pnpm --filter @workspace/api-server exec esbuild ../neighborhood-kitchen/src/nk/prototype.test.ts ../neighborhood-kitchen/src/nk/publication.test.ts ../neighborhood-kitchen/src/nk/navigation.test.ts --bundle --platform=node --format=esm --outdir=/tmp/neighborhood-kitchen-tests
 node --test /tmp/neighborhood-kitchen-tests/*.js
 ```
 

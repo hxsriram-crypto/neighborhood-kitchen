@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import NotFound from '@/pages/not-found';
-import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { useLocation, Router as WouterRouter } from 'wouter';
 import { StoreProvider, useStore } from '@/nk/store';
 import { Shell } from '@/nk/Shell';
 import Discover from '@/screens/Discover';
@@ -17,6 +17,7 @@ import ReportQueue from '@/screens/ReportQueue';
 function Screens() {
   const { nav } = useStore();
   const s = nav.screen;
+  if (nav.notFound) return <NotFound />;
   return (
     <Shell>
       {s === 'Discover' && <Discover />}
@@ -40,17 +41,6 @@ function Home() {
   );
 }
 
-function Router() {
-  return (
-    <RoutedErrorBoundary>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route component={NotFound} />
-      </Switch>
-    </RoutedErrorBoundary>
-  );
-}
-
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
@@ -59,7 +49,9 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 function App() {
   return (
     <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-      <Router />
+      <RoutedErrorBoundary>
+        <Home />
+      </RoutedErrorBoundary>
     </WouterRouter>
   );
 }
