@@ -29,6 +29,16 @@ async function expectCook(page: Page, baseURL: string) {
   await expect(page.getByTestId("text-offer-title")).toHaveCount(0);
 }
 
+async function cancelReloadWarning(page: Page) {
+  const dialogPromise = page.waitForEvent("dialog");
+  // A canceled reload has no navigation to wait for. Catch teardown rejection
+  // without awaiting the reload promise.
+  void page.reload().catch(() => undefined);
+  const dialog = await dialogPromise;
+  expect(dialog.type()).toBe("beforeunload");
+  await dialog.dismiss();
+}
+
 test("Discover → meal → cook profile survives real Back/Forward and reload", async ({ navigation: page, baseURL }) => {
   await page.goto(baseURL!);
   await expectDiscover(page, baseURL!);
@@ -288,6 +298,34 @@ test("clean and saved applications do not prompt, while dirty edits warn before 
   await dialog.accept();
   await reloadPromise;
   await expect(page.getByTestId("input-app-name")).toHaveValue("Fictional saved applicant");
+});
+
+test("canceling a dirty offer reload warning keeps the edited offer open", async ({ navigation: page, baseURL }) => {
+  await page.goto(baseURL!);
+  await page.getByTestId("nav-For cooks").click();
+  await page.getByTestId("button-edit-squash").click();
+  const title = page.getByTestId("input-title");
+  await title.fill("Fictional offer retained after canceled reload");
+
+  await cancelReloadWarning(page);
+
+  await expectPath(page, baseURL!, "offers/squash/edit");
+  await expect(title).toBeVisible();
+  await expect(title).toHaveValue("Fictional offer retained after canceled reload");
+});
+
+test("canceling a dirty application reload warning keeps the application open", async ({ navigation: page, baseURL }) => {
+  await page.goto(baseURL!);
+  await page.getByTestId("nav-For cooks").click();
+  await page.getByRole("button", { name: "Application & eligibility" }).click();
+  const name = page.getByTestId("input-app-name");
+  await name.fill("Fictional applicant retained after canceled reload");
+
+  await cancelReloadWarning(page);
+
+  await expectPath(page, baseURL!, "cook-application");
+  await expect(name).toBeVisible();
+  await expect(name).toHaveValue("Fictional applicant retained after canceled reload");
 });
 
 test("a fresh direct encoded meal link reloads and navigates within its artifact base", async ({ navigation: page, baseURL }) => {
