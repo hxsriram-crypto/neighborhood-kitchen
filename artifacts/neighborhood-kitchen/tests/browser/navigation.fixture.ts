@@ -18,6 +18,7 @@ const data = makeSeed(clock);
 data.signedIn = true;
 data.phoneConsent = true; // Previously recorded simulated neighbor consent.
 data.operator = false;
+data.cooks = data.cooks.map((entry) => entry.id === "me" ? { ...entry, status: "draft" } : entry);
 const cook = data.cooks.find((entry) => entry.id === "mara")!;
 data.cooks = [
   ...data.cooks.filter((entry) => entry.id === "me"),
@@ -25,6 +26,7 @@ data.cooks = [
   { ...cook, id: "fictional-ineligible", name: "Fictional Suspended Cook", status: "suspended" },
 ];
 const soup = data.offers.find((entry) => entry.id === "soup")!;
+const editorDraft = data.offers.find((entry) => entry.id === "squash")!;
 const meal: Offer = { ...soup, id: mealId, cookId, title: mealTitle };
 export const unavailable = [
   { id: "fictional-closed", status: "status-closed", reason: "offer closed", patch: { status: "closed" } },
@@ -39,6 +41,7 @@ export const unavailable = [
 ] satisfies { id: string; status: string; reason: string; patch: Partial<Offer> }[];
 data.offers = [
   meal,
+  editorDraft,
   ...unavailable.map(({ id, patch }) => ({ ...meal, ...patch, id, title: `Fictional unavailable meal: ${id}` })),
   { ...meal, id: "fictional-private-draft", status: "draft" },
 ];

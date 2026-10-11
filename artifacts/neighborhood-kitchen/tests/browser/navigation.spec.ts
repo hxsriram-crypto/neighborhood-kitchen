@@ -121,6 +121,175 @@ test("a dirty report warns before reload, and a local submission clears its navi
   await expectDiscover(page, baseURL!);
 });
 
+test("offer edits survive Stay for in-app navigation and browser Back/Forward", async ({ navigation: page, baseURL }) => {
+  await page.goto(baseURL!);
+  await page.getByTestId("nav-For cooks").click();
+  await page.getByTestId("button-edit-squash").click();
+  const title = page.getByTestId("input-title");
+  await expect(title).toHaveValue("Roasted squash & rice");
+
+  // A clean editor can leave normally, and its history entry can be revisited.
+  await page.getByTestId("nav-Browse meals").click();
+  await expectDiscover(page, baseURL!);
+  await page.goBack();
+  await expect(title).toHaveValue("Roasted squash & rice");
+  await title.fill("Fictional offer retained after Forward");
+
+  // The editor is now behind the current history entry. Stay restores it,
+  // while Discard authorizes the pending Forward traversal.
+  await page.goForward();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-stay-editing").click();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeHidden();
+  await expectPath(page, baseURL!, "offers/squash/edit");
+  await expect(title).toHaveValue("Fictional offer retained after Forward");
+  await page.goForward();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-discard-leave").click();
+  await expectDiscover(page, baseURL!);
+
+  // A dirty in-app departure also waits for an explicit decision.
+  await page.goBack();
+  await expect(title).toHaveValue("Roasted squash & rice");
+  await title.fill("Fictional offer retained after Back");
+  await page.getByTestId("nav-Browse meals").click();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-stay-editing").click();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeHidden();
+  await expect(title).toHaveValue("Fictional offer retained after Back");
+  await page.getByTestId("nav-Browse meals").click();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-discard-leave").click();
+  await expectDiscover(page, baseURL!);
+
+  // A dirty Back traversal keeps the edited form mounted after Stay.
+  await page.goBack();
+  await expect(title).toHaveValue("Roasted squash & rice");
+  await title.fill("Fictional offer retained after Back traversal");
+  await page.goBack();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-stay-editing").click();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeHidden();
+  await expectPath(page, baseURL!, "offers/squash/edit");
+  await expect(title).toHaveValue("Fictional offer retained after Back traversal");
+  await page.goBack();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-discard-leave").click();
+  await expect(page.getByTestId("button-new-offer")).toBeVisible();
+});
+
+test("application edits survive Stay for in-app navigation and browser Back/Forward", async ({ navigation: page, baseURL }) => {
+  await page.goto(baseURL!);
+  await page.getByTestId("nav-For cooks").click();
+  await page.getByRole("button", { name: "Application & eligibility" }).click();
+  const name = page.getByTestId("input-app-name");
+  await expect(name).toHaveValue("Alex Larkin");
+
+  // A clean application can leave normally and be revisited from history.
+  await page.getByTestId("nav-Browse meals").click();
+  await expectDiscover(page, baseURL!);
+  await page.goBack();
+  await expect(name).toHaveValue("Alex Larkin");
+  await name.fill("Fictional applicant retained after Forward");
+
+  // A cancelled Forward must return to the original form before asking.
+  await page.goForward();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-stay-editing").click();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeHidden();
+  await expectPath(page, baseURL!, "cook-application");
+  await expect(name).toHaveValue("Fictional applicant retained after Forward");
+  await page.goForward();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-discard-leave").click();
+  await expectDiscover(page, baseURL!);
+
+  // In-app navigation and Back use the same Stay/Discard decision.
+  await page.goBack();
+  await expect(name).toHaveValue("Alex Larkin");
+  await name.fill("Fictional applicant retained after in-app navigation");
+  await page.getByTestId("nav-Browse meals").click();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-stay-editing").click();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeHidden();
+  await expect(name).toHaveValue("Fictional applicant retained after in-app navigation");
+  await page.getByTestId("nav-Browse meals").click();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-discard-leave").click();
+  await expectDiscover(page, baseURL!);
+
+  await page.goBack();
+  await expect(name).toHaveValue("Alex Larkin");
+  await name.fill("Fictional applicant retained after Back");
+  await page.goBack();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-stay-editing").click();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeHidden();
+  await expectPath(page, baseURL!, "cook-application");
+  await expect(name).toHaveValue("Fictional applicant retained after Back");
+  await page.goBack();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toBeVisible();
+  await page.getByTestId("button-discard-leave").click();
+  await expect(page.getByTestId("button-new-offer")).toBeVisible();
+});
+
+test("clean and saved offer editors do not prompt, while dirty edits warn before reload", async ({ navigation: page, baseURL, navigationState }) => {
+  await page.goto(baseURL!);
+  await page.getByTestId("nav-For cooks").click();
+  await page.getByTestId("button-edit-squash").click();
+  await page.getByRole("button", { name: "Back to My cooking" }).click();
+  await expect(page.getByTestId("button-new-offer")).toBeVisible();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toHaveCount(0);
+
+  await page.getByTestId("button-edit-squash").click();
+  const title = page.getByTestId("input-title");
+  await title.fill("Fictional saved offer title");
+  navigationState.allowLocalStorageChanges = true;
+  await page.getByTestId("button-save-draft").click();
+  await expect(page.getByTestId("text-saved")).toContainText("Draft saved.");
+  await page.getByRole("button", { name: "Back to My cooking" }).click();
+  await expect(page.getByTestId("button-new-offer")).toBeVisible();
+  await expect(page.getByTestId("dialog-unsaved-changes")).toHaveCount(0);
+
+  await page.getByTestId("button-edit-squash").click();
+  await page.getByTestId("input-title").fill("Fictional unsaved offer reload check");
+  const dialogPromise = page.waitForEvent("dialog");
+  const reloadPromise = page.reload();
+  const dialog = await dialogPromise;
+  expect(dialog.type()).toBe("beforeunload");
+  await dialog.accept();
+  await reloadPromise;
+  await expect(page.getByTestId("input-title")).toHaveValue("Fictional saved offer title");
+});
+
+test("clean and saved applications do not prompt, while dirty edits warn before reload", async ({ navigation: page, baseURL, navigationState }) => {
+  await page.goto(baseURL!);
+  await page.getByTestId("nav-For cooks").click();
+  await page.getByRole("button", { name: "Application & eligibility" }).click();
+  await page.getByTestId("nav-Browse meals").click();
+  await expectDiscover(page, baseURL!);
+  await expect(page.getByTestId("dialog-unsaved-changes")).toHaveCount(0);
+
+  await page.getByTestId("nav-For cooks").click();
+  await page.getByRole("button", { name: "Application & eligibility" }).click();
+  await page.getByTestId("input-app-name").fill("Fictional saved applicant");
+  navigationState.allowLocalStorageChanges = true;
+  await page.getByTestId("button-save-application").click();
+  await page.getByTestId("nav-Browse meals").click();
+  await expectDiscover(page, baseURL!);
+  await expect(page.getByTestId("dialog-unsaved-changes")).toHaveCount(0);
+
+  await page.goBack();
+  await page.getByTestId("input-app-name").fill("Fictional unsaved applicant reload check");
+  const dialogPromise = page.waitForEvent("dialog");
+  const reloadPromise = page.reload();
+  const dialog = await dialogPromise;
+  expect(dialog.type()).toBe("beforeunload");
+  await dialog.accept();
+  await reloadPromise;
+  await expect(page.getByTestId("input-app-name")).toHaveValue("Fictional saved applicant");
+});
+
 test("a fresh direct encoded meal link reloads and navigates within its artifact base", async ({ navigation: page, baseURL }) => {
   await page.goto(new URL(mealPath, baseURL!).href);
   await expectMeal(page, baseURL!);

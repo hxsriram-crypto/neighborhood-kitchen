@@ -26,6 +26,10 @@ Every case runs under both bases. Coverage:
 
 - Discover → encoded meal ID → encoded cook ID; real browser Back and Forward,
   reload on meal/profile, and no duplicate history step from the current tab.
+- Dirty fictional offer and cook-application edits survive Stay after in-app
+  navigation and browser Back/Forward; Discard completes the pending departure.
+- Clean and successfully saved offer/application forms leave without prompting,
+  while dirty forms trigger the browser-owned warning before reload.
 - Fresh direct meal links, reload, and the in-app Back to Discover button.
 - Direct/reloaded closed, already-expired, consent-withdrawn, moderated, and
   ineligible meals keep warnings and block contact even with prior neighbor consent.
