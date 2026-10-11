@@ -4,7 +4,7 @@ A lightweight web marketplace bringing neighbors together: residential cooks and
 
 ## Current authorization
 
-The founder has explicitly approved the mobile, tablet, and desktop wireframes and the recommended core technical stack. The current stage is resolving setup prerequisites. Do not begin functional development or provision dependent services until spending, ownership/access, and affected privacy/test settings are explicitly approved and setup is authorized. Do not enable real contact, real participant notifications, or live food activity.
+The founder approved the wireframes and recommended core stack, and then requested a playable prototype now, revisiting billing when services need enabling. The current stage permits a fictional-data, browser-local interactive web prototype with simulated identities/operator actions, scripted assistance, and inert contacts. Do not provision auth, storage, databases, real AI, or published hosting for this stage. Before service-backed implementation, obtain relevant spending/privacy/access approvals and setup authorization. Do not collect real personal data or enable real contact, notifications, or live food activity.
 
 Unresolved product, design, architecture, vendor, cost, privacy, or scope choices require practical options and a recommendation followed by an explicit founder answer before dependent work. Proposed defaults are not approvals. Start technical setup proposals by asking for missing budget ceiling, workspace/repository ownership, and technical preferences.
 
@@ -12,6 +12,7 @@ The founder approved React/Vite, the existing Express API, development PostgreSQ
 
 ## Run & Operate
 
+- `pnpm --filter @workspace/neighborhood-kitchen run dev` — playable browser-local prototype, using the managed workflow's environment
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
@@ -42,7 +43,7 @@ _Populate as you build — non-obvious choices a reader couldn't infer from the 
 
 “We sell what we eat” is for cooks, not the marketplace's overall tagline. The presentation must clearly serve both cooks and families looking for a meal.
 
-Discovery and connection only. No in-app orders, reservations, inventory, payments, delivery, order messages, pickup confirmation, or completion tracking. Current screens and assistant interactions are simulated visual wireframes.
+Discovery and connection only. No in-app orders, reservations, inventory, payments, delivery, order messages, pickup confirmation, or completion tracking. The approved sandbox wireframes remain a design reference; the playable prototype uses browser-local fictional data and simulated identity/contact/operator/helper interactions.
 
 ## User preferences
 
@@ -57,4 +58,5 @@ _Populate as you build — sharp edges, "always run X before Y" rules._
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
 - [Document review and source-document links](docs/document-review.md)
 - [Founder decision log and authorization gates](docs/decision-log.md)
+- [Playable prototype walkthrough and limitations](docs/playable-prototype.md)
 - [Technical proposal, costs, setup checklist, and PRD-linked backlog](docs/technical-proposal.md) — core stack selected; setup and implementation not yet authorized

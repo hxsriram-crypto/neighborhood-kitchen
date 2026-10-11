@@ -40,9 +40,20 @@ The founder confirmed: “I control the workspace and billing.”
 
 This resolves who can authorize setup. No numeric spending allowance has been approved, no billing controls have been configured by the agent, and no provisioning is authorized by this confirmation alone.
 
+## Playable prototype authorization
+
+The founder asked: “Can we revisit this when there is a need to enable the services? Right now just want to see a working prototype that can be played around.”
+
+Build a playable, fictional-data, browser-local prototype from the approved wireframes now. Defer service billing decisions until a service is needed. This supersedes the setup prerequisites only for the browser-local prototype, not the service-backed implementation.
+
+- Browser-local persistence, simulated identities/operator actions, scripted helper, and inert contact demonstrations are permitted.
+- Do not provision authentication, storage, databases, real AI, or published hosting for this stage.
+- Do not collect real personal data, upload evidence, contact neighbors, or enable live food activity.
+- Before enabling a service, revisit its costs and the relevant privacy/access decisions with the founder.
+
 ## Authorization gates
 
-The founder explicitly approved the current mobile, tablet, and desktop wireframes and the recommended core technical choices. The next stage is resolving setup prerequisites, not functional development.
+The founder explicitly approved the current mobile, tablet, and desktop wireframes and the recommended core technical choices, and subsequently authorized a browser-local playable prototype. Service-backed setup and implementation remain gated.
 
 - Wireframes are visual and simulated only.
 - Wireframe approval does not approve vendors, spending, provisioning, functional implementation, or live operation.

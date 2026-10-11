@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Neighborhood Kitchen"
+description = "A playable, browser-local prototype of a neighborhood meal marketplace, using fictional cooks and meals. No real contact, paid services, orders, payments or live AI."
+version = "1.0.0"
+id = "artifacts/neighborhood-kitchen"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23820
+
+[services.development]
+run = "pnpm --filter @workspace/neighborhood-kitchen run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/neighborhood-kitchen", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/neighborhood-kitchen/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23820"
+BASE_PATH = "/"

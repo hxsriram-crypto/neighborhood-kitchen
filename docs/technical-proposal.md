@@ -2,7 +2,7 @@
 
 ## Status
 
-**Core stack selected by the founder. Not authorization to provision services, install packages, implement features, incur charges, or publish.**
+**Core stack selected. The founder subsequently authorized a browser-local playable prototype only, deferring service billing decisions until services are needed. The service-backed proposal below is not authorization to provision services, incur service charges, or publish.**
 
 The founder approved the mobile, tablet, and desktop wireframes and approved these assumptions for preparing this proposal:
 
@@ -12,6 +12,8 @@ The founder approved the mobile, tablet, and desktop wireframes and approved the
 - Build the functional core before enabling real AI.
 
 The founder subsequently approved React/Vite, the existing Express API, development PostgreSQL/Drizzle, Replit-managed Clerk Auth, and Replit App Storage. This tool selection does not establish a numeric budget ceiling or authorize setup or implementation.
+
+The current playable-prototype stage is frontend-only: fictional records, browser-local saves, simulated sign-in/operator actions, scripted assistance, and inert contact. It does not use the proposed API/database/auth/storage integrations. Revisit costs and affected privacy/access choices before enabling each service. This is not the service-backed functional core or a live-pilot-ready app.
 
 ## 1. Recommendation
 

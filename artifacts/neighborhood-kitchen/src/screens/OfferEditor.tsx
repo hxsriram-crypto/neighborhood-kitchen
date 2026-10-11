@@ -1,0 +1,79 @@
+import { useState } from "react";
+import { Check, Minus, Plus, Trash2 } from "lucide-react";
+import { useStore } from "@/nk/store";
+import { SignInGate } from "@/nk/Gates";
+import { Btn, Field, Notice, OfferCard, PageTitle } from "@/nk/ui";
+import { blankOffer, deadlineMs, fmtDeadline, fmtDay, fmtLong, fmtWindow, pickupEndMs, pickupStartMs, validatePublish } from "@/nk/domain";
+import { ALLERGENS, DIETARY_TAGS, ME, type AllergenDecl, type Ingredient, type Offer, type Organic } from "@/nk/types";
+
+const ORG: Organic[] = ["unknown", "not stated", "cook-reported organic", "not organic"];
+
+export default function OfferEditor() {
+  const { data, now, nav, go, upsertOffer } = useStore();
+  const existing = nav.editorId ? data.offers.find((o) => o.id === nav.editorId && o.cookId === ME) : undefined;
+  const [f, setF] = useState<Offer>(() => existing ? JSON.parse(JSON.stringify(existing)) : { ...blankOffer(Date.now()), ...(nav.seed ?? {}) });
+  const [errs, setErrs] = useState<string[]>([]);
+  const [preview, setPreview] = useState(false);
+  const [saved, setSaved] = useState("");
+  const me = data.cooks.find((c) => c.id === ME);
+  const set = (p: Partial<Offer>) => { setF((x) => ({ ...x, ...p })); setSaved(""); };
+  const setIng = (i: number, p: Partial<Ingredient>) => set({ ingredients: f.ingredients.map((x, k) => (k === i ? { ...x, ...p } : x)) });
+  const status = existing?.status ?? "draft";
+  const stamp = (o: Offer): Offer => ({ ...o, cookId: ME, ingredients: o.ingredients.filter((i) => i.name.trim()), version: status === "draft" ? 0 : (existing?.version ?? 0) + 1, updatedAt: new Date().toISOString() });
+  const saveDraft = () => {
+    if (!f.title.trim()) { setErrs(["Add a meal name before saving."]); return; }
+    if (status === "published") { const e = validatePublish(f, me, Date.now()); if (e.length) { setErrs(e); return; } }
+    setErrs([]); upsertOffer(stamp(f), status === "published" ? "Changes saved to your live offer. If neighbors have arranged meals with you outside the app, tell them directly about material changes." : status === "closed" ? "Changes saved; offer stays closed." : "Draft saved.");
+    setSaved(status === "published" ? "Changes saved to the published offer." : "Draft saved.");
+    if (!existing) setF((x) => ({ ...x }));
+  };
+  const publish = (reopen: boolean) => {
+    const e = validatePublish(f, me, Date.now());
+    setErrs(e); if (e.length) return;
+    upsertOffer({ ...stamp(f), status: "published", version: (existing?.version ?? 0) + 1 }, reopen ? "Offer reopened by you and published." : "Offer published.");
+    go("My cooking");
+  };
+  const pStart = pickupStartMs(f), pEnd = pickupEndMs(f), dl = deadlineMs(f);
+  const checks: [string, boolean][] = [["Meal name & description", !!f.title.trim() && !!f.description.trim()], ["Price and portion", Number(f.price) > 0 && !!f.portion.trim()], ["Ingredients & per-item sourcing/organic", f.ingredients.some((i) => i.name.trim())], ["Cuisine & handling", !!f.cuisine.trim() && !!f.handling.trim()], ["Pickup chronology", pEnd > pStart], ["Ordering deadline (future, ≤ pickup start)", dl > now && dl <= pStart], ["Phone-route consent", f.contactConsent], ["Same-day commitment", f.commitment]];
+  const blocked = me?.status !== "approved";
+  return <div className="max-w-4xl"><PageTitle eyebrow="Offer editor · demo draft" title={existing ? "Edit your offer." : "Describe an upcoming meal."} sub="Validation runs on this device only. Published offers appear to neighbors in this browser, nothing is shared." />
+    <SignInGate why="Sign in (simulated) to create or edit offers.">
+      {nav.seed && !existing && <Notice tone="green">Draft fields came from the scripted helper using only what you typed. Nothing is saved or published yet; review everything below.</Notice>}
+      {blocked && <Notice tone="red" testid="status-publish-blocked"><b>Publishing is blocked.</b> Cook eligibility is {me?.status === "none" ? "not applied" : me?.status}. You can still save drafts.</Notice>}
+      {status === "closed" && <Notice tone="gold"><b>This offer is closed.</b> It will not reopen on its own. Fix any problems, then use Reopen offer.</Notice>}
+      {errs.length > 0 && <Notice tone="red" testid="errors-editor"><b>Not ready yet:</b><ul className="ml-4 list-disc">{errs.map((x) => <li key={x}>{x}</li>)}</ul></Notice>}
+      {saved && <Notice tone="green" testid="text-saved">{saved}</Notice>}
+      <div className="grid gap-5 lg:grid-cols-[1fr_300px]"><section className="nk-card nk-content">
+        <Field label="Meal name" id="meal-title"><input id="meal-title" data-testid="input-title" className="nk-input" value={f.title} onChange={(e) => set({ title: e.target.value })} /></Field>
+        <Field label="Description" id="meal-description"><textarea id="meal-description" data-testid="input-description" className="nk-input" rows={3} value={f.description} onChange={(e) => set({ description: e.target.value })} /></Field>
+        <div className="mb-4 rounded-xl border border-dashed border-[#d8dfd4] bg-[#f8f8f2] p-4"><p className="nk-label">Photo placeholder</p><div className="flex h-24 items-center justify-center rounded-lg bg-[#e9eee5] text-xs text-[#6c7c6f]">Sample meal image area · no upload in this demo</div></div>
+        <div className="grid gap-3 sm:grid-cols-2"><Field label="Price per portion · USD" id="meal-price"><input id="meal-price" data-testid="input-price" inputMode="decimal" className="nk-input" value={f.price} onChange={(e) => set({ price: e.target.value })} /></Field><Field label="Cuisine" id="meal-cuisine"><input id="meal-cuisine" data-testid="input-cuisine" className="nk-input" value={f.cuisine} onChange={(e) => set({ cuisine: e.target.value })} /></Field></div>
+        <Field label="Portion size description (not a count of available portions)" id="portion-size"><input id="portion-size" data-testid="input-portion" className="nk-input" value={f.portion} onChange={(e) => set({ portion: e.target.value })} /></Field>
+        <div className="mb-4"><p className="nk-label">Dietary tags · cook-declared</p><div className="flex flex-wrap gap-3">{DIETARY_TAGS.map((t) => <label key={t} className="flex items-center gap-2 text-sm"><input type="checkbox" className="accent-[#365b4b]" checked={f.tags.includes(t)} onChange={(e) => set({ tags: e.target.checked ? [...f.tags, t] : f.tags.filter((x) => x !== t) })} />{t}</label>)}</div><p className="mt-1 text-[11px] text-[#7c897f]">Tags never establish allergy safety.</p></div>
+        <div className="mb-4"><p className="nk-label">Ingredients · sourcing and organic status for each</p>
+          {f.ingredients.map((i, k) => <div key={k} className="mb-2 grid gap-2 sm:grid-cols-[1.2fr_1.2fr_1fr_auto]"><input aria-label={"Ingredient " + (k + 1) + " name"} data-testid={"input-ing-name-" + k} placeholder="Ingredient" className="nk-input" value={i.name} onChange={(e) => setIng(k, { name: e.target.value })} /><input aria-label={"Ingredient " + (k + 1) + " source"} placeholder="Source (blank = unknown)" className="nk-input" value={i.source} onChange={(e) => setIng(k, { source: e.target.value })} /><select aria-label={"Ingredient " + (k + 1) + " organic status"} className="nk-input" value={i.organic} onChange={(e) => setIng(k, { organic: e.target.value as Organic })}>{ORG.map((o) => <option key={o}>{o}</option>)}</select><button aria-label="Remove ingredient" className="nk-button nk-plain !px-3" onClick={() => set({ ingredients: f.ingredients.length > 1 ? f.ingredients.filter((_, j) => j !== k) : [{ name: "", source: "", organic: "unknown" }] })}><Trash2 size={15} /></button></div>)}
+          <Btn testid="button-add-ingredient" icon={<Plus size={14} />} onClick={() => set({ ingredients: [...f.ingredients, { name: "", source: "", organic: "unknown" }] })}>Add ingredient</Btn><p className="mt-2 text-[11px] text-[#7c897f]">Frozen ingredients are fine to list; the completed meal must not be frozen.</p></div>
+        <div className="mb-4"><p className="nk-label">Nine major allergen declarations · per allergen</p><div className="grid gap-2 sm:grid-cols-3">{ALLERGENS.map((a, k) => <div key={a}><label className="nk-label !mb-1" htmlFor={"editor-allergen-" + k}>{a}</label><select id={"editor-allergen-" + k} data-testid={"select-allergen-" + a} className="nk-input !py-2" value={f.allergens[a] ?? "unknown"} onChange={(e) => set({ allergens: { ...f.allergens, [a]: e.target.value as AllergenDecl } })}><option value="unknown">Unknown / not stated</option><option value="present">Present in listed ingredients</option><option value="absent">Not present · cook-declared</option></select></div>)}</div><p className="mt-2 text-[11px] text-[#7c897f]">Unknown is explicit; it does not mean absent or allergy-safe.</p></div>
+        <div className="grid gap-3 sm:grid-cols-2"><Field label="Kitchen cross-contact" id="cross-contact"><select id="cross-contact" className="nk-input" value={f.crossContact} onChange={(e) => set({ crossContact: e.target.value as Offer["crossContact"] })}><option value="unknown">Unknown</option><option value="known">Describe known cross-contact</option><option value="none">No known cross-contact reported</option></select></Field><Field label="Pickup condition (hot or chilled)" id="pickup-condition"><select id="pickup-condition" data-testid="select-condition" className="nk-input" value={f.condition} onChange={(e) => set({ condition: e.target.value as Offer["condition"] })}><option>Chilled</option><option>Hot</option></select></Field></div>
+        {f.crossContact === "known" && <Field label="Cross-contact details" id="cross-note"><textarea id="cross-note" className="nk-input" rows={2} value={f.crossContactNote} onChange={(e) => set({ crossContactNote: e.target.value })} /></Field>}
+        <Field label="Food-specific handling instructions" id="handling-instructions"><textarea id="handling-instructions" data-testid="input-handling" className="nk-input" rows={2} value={f.handling} onChange={(e) => set({ handling: e.target.value })} /></Field>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Pickup date" id="pickup-date"><input id="pickup-date" data-testid="input-pickup-date" type="date" className="nk-input" value={f.pickupDate} onChange={(e) => set({ pickupDate: e.target.value, commitment: false })} /></Field>
+          <div />
+          <Field label="Pickup start · UTC" id="pickup-start"><input id="pickup-start" data-testid="input-pickup-start" type="time" className="nk-input" value={f.pickupStart} onChange={(e) => set({ pickupStart: e.target.value })} /></Field>
+          <Field label="Pickup end · UTC" id="pickup-end"><input id="pickup-end" data-testid="input-pickup-end" type="time" className="nk-input" value={f.pickupEnd} onChange={(e) => set({ pickupEnd: e.target.value })} /></Field>
+          <Field label="Ordering deadline date · separate" id="cutoff-date"><input id="cutoff-date" data-testid="input-deadline-date" type="date" className="nk-input" value={f.deadlineDate} onChange={(e) => set({ deadlineDate: e.target.value })} /></Field>
+          <Field label="Ordering deadline time · UTC · separate" id="cutoff-time"><input id="cutoff-time" data-testid="input-deadline-time" type="time" className="nk-input" value={f.deadlineTime} onChange={(e) => set({ deadlineTime: e.target.value })} /></Field>
+        </div>
+        <p className="mb-4 text-[11px] text-[#7c897f]" data-testid="text-schedule-summary">Demo kitchen time: UTC (fixed, not a timezone selection). Ordering deadline must be in the future and no later than pickup start; pickup may be days ahead. {f.pickupDate && f.deadlineDate && f.deadlineTime ? "Currently: pickup " + fmtDay(f.pickupDate) + " " + fmtWindow(f) + ", deadline " + fmtDeadline(f) + "." : ""}</p>
+        <Field label="Contact route" id="contact-route"><select id="contact-route" className="nk-input" disabled><option>Phone · fictional sample</option></select></Field>
+        <div className="mb-4 rounded-xl border border-[#e5e9e0] p-4"><p className="nk-label">Family-care promise · cook statement</p><p className="text-sm leading-5 text-[#65746a]">“I make this meal with the same care and ingredients I use for my own family.” A community promise, not a safety or nutrition claim.</p></div>
+        <label className="mb-3 flex items-start gap-3 text-sm leading-5"><input id="contact-consent" data-testid="check-contact-consent" type="checkbox" className="mt-1 accent-[#365b4b]" checked={f.contactConsent} onChange={(e) => set({ contactConsent: e.target.checked })} />I consent to display the fictional phone contact route to signed-in neighbors who consent.</label>
+        <label className="mb-5 flex items-start gap-3 text-sm leading-5"><input id="same-day-commitment" data-testid="check-commitment" type="checkbox" className="mt-1 accent-[#365b4b]" checked={f.commitment} onChange={(e) => set({ commitment: e.target.checked })} /><span>I will prepare this meal on the day of pickup and will not freeze the completed meal.<span className="block text-xs text-[#818b82]">Unchecked by default. Changing the pickup date clears this declaration. {f.pickupDate ? "Planned for " + fmtLong(f.pickupDate) + " (cook-reported)." : "Advance publishing is not advance preparation."}</span></span></label>
+        <div className="flex flex-wrap gap-2"><Btn testid="button-save-draft" onClick={saveDraft}>{status === "draft" ? "Save draft" : "Save changes"}</Btn><Btn testid="button-preview" onClick={() => setPreview(!preview)}>{preview ? "Hide preview" : "Preview"}</Btn>
+          {status === "closed" ? <Btn testid="button-reopen" variant="solid" disabled={blocked} onClick={() => publish(true)}>Reopen offer</Btn> : status === "draft" ? <Btn testid="button-publish" variant="solid" disabled={blocked} onClick={() => publish(false)}>Publish offer</Btn> : null}
+          <Btn variant="plain" onClick={() => go("My cooking")}>Back to My cooking</Btn></div>
+        {preview && <div className="mt-5 max-w-sm"><OfferCard offer={f} cook={me} onOpen={() => setErrs(["Preview only: save the offer, then open it from My cooking."])} /></div>}
+      </section><aside className="space-y-4"><div className="nk-card nk-content"><p className="nk-eyebrow">Disclosure checklist</p>{checks.map(([x, ok]) => <div key={x} className="flex items-center gap-2 border-b border-[#edf0e9] py-2 text-xs"><span className={"flex h-5 w-5 shrink-0 items-center justify-center rounded-full " + (ok ? "bg-[#dce9da] text-[#42634a]" : "bg-[#f2e9d6] text-[#8c7447]")}>{ok ? <Check size={12} /> : <Minus size={12} />}</span>{x}</div>)}</div><div className="nk-card nk-content"><Notice>Exact pickup details are shared directly outside the platform. If a material change affects neighbors you arranged with externally, contact them directly.</Notice></div></aside></div>
+    </SignInGate></div>;
+}
