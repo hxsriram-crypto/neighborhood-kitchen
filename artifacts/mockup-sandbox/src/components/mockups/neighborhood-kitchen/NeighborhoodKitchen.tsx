@@ -85,6 +85,7 @@ export function NeighborhoodKitchen() {
         .nk-bowl:before{content:'';position:absolute;inset:11px 12px 17px;background:radial-gradient(ellipse,#af583c 0 10%,transparent 11%),radial-gradient(ellipse at 70% 40%,#82996d 0 11%,transparent 12%),radial-gradient(ellipse at 35% 67%,#dec37b 0 12%,transparent 13%),#dba375;border-radius:50%}
         .nk-content{padding:20px}.nk-tab{white-space:nowrap}.nk-mobile-tabs{overflow:auto;scrollbar-width:none}
         @media(max-width:767px){.nk-frame{padding:0 14px 36px}.nk-desktop-nav{display:none!important}.nk-content{padding:17px}.nk-mobile-only{display:flex!important}.nk-heading{font-size:34px}.nk-toprow{padding:12px 14px!important}.nk-cardgrid{grid-template-columns:1fr!important}.nk-two{grid-template-columns:1fr!important}.nk-footer-nav{position:sticky;bottom:0;z-index:20;background:#fbfbf6;border-top:1px solid #e0e5dc;padding:7px 6px env(safe-area-inset-bottom);margin:0 -14px}.nk-footer-nav button{font-size:10px;padding:7px 4px;min-width:57px}.nk-footer-nav svg{width:18px;height:18px}.nk-detail-grid{grid-template-columns:1fr!important}}
+        @media(min-width:768px){.nk-toprow{padding-top:16px;padding-bottom:16px}}
         @media(min-width:768px) and (max-width:1023px){.nk-frame{padding-left:22px;padding-right:22px}.nk-content{padding:18px}}
       `}</style>
       <header className="nk-top">
