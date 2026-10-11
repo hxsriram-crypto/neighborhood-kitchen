@@ -19,6 +19,8 @@ export function makeSeed(now: number): Data {
   ];
   const app = (name: string, extra: Partial<Application> = {}): Application => ({ name, neighborhood: "Maplewood", setting: "My own residential kitchen", permitAgency: "", permitNumber: "", permitExpiry: "", evidenceSample: false, residential: true, jurisdiction: true, disclosures: true, updatedAt: iso, ...extra });
   for (const offer of offers) {
+    // This is sample creation time, not a claim of historical publication.
+    if (offer.status === "published") offer.publishedAt = iso;
     offer.otherAllergens = "";
     offer.revisions = [];
     if (offer.commitment) offer.preparationConfirmation = {

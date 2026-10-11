@@ -81,7 +81,15 @@ export const fmtNow = (now: number) => { const d = new Date(now); return d.toISO
 export const fmtStamp = (iso: string) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 16).replace("T", " ") + " UTC"; };
 export const money = (p: string) => { const cents = usdMinorUnits(p); return cents === null ? "$—" : "$" + (cents % 100 === 0 ? cents / 100 : (cents / 100).toFixed(2)); };
 export const cookName = (cooks: Cook[], id: string) => cooks.find((c) => c.id === id)?.name ?? "Unknown cook";
-export const sortOffers = (a: Offer, b: Offer) => pickupStartMs(a) - pickupStartMs(b) || b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id);
+/** Missing historical times stay unknown: known publications first, then stable IDs. */
+export const sortOffers = (a: Offer, b: Offer) => {
+  const pickup = pickupStartMs(a) - pickupStartMs(b);
+  if (pickup) return pickup;
+  const aTime = a.publishedAt === undefined ? NaN : Date.parse(a.publishedAt);
+  const bTime = b.publishedAt === undefined ? NaN : Date.parse(b.publishedAt);
+  const aKnown = Number.isFinite(aTime), bKnown = Number.isFinite(bTime);
+  return (aKnown && bKnown ? bTime - aTime : Number(bKnown) - Number(aKnown)) || a.id.localeCompare(b.id);
+};
 export const emptyAllergens = () => Object.fromEntries(ALLERGENS.map((a) => [a, "unknown"])) as Offer["allergens"];
 export function blankOffer(now: number): Offer {
   return { id: "o_" + now.toString(36), cookId: "me", title: "", description: "", price: "", cuisine: "", portion: "", ingredients: [{ name: "", source: "", organic: "unknown" }], allergens: emptyAllergens(), crossContact: "unknown", crossContactNote: "", condition: "Chilled", handling: "", tags: [], pickupDate: "", pickupStart: "17:00", pickupEnd: "19:00", deadlineDate: "", deadlineTime: "", commitment: false, contactConsent: false, status: "draft", moderated: false, version: 0, updatedAt: new Date(now).toISOString(), art: "peach" };

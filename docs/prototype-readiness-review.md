@@ -134,6 +134,8 @@ The original review found screens selected through React state under the root ro
 
 **Evidence:** `src/screens/Discover.tsx`, `src/nk/domain.ts` (`sortOffers`), `src/nk/types.ts`.
 
+**Local-only follow-up:** Featured offers now show a separate “Contact / order by” date/time in UTC alongside labeled pickup information. Discovery sorts by pickup start, then first publication (newest first), then sample ID. Successful first publication records `publishedAt`; edits, closure, moderation, consent withdrawal and reopening preserve it. New published fixtures use their browser-local sample creation time, not a historical claim. Existing saved published/closed samples without that field remain unknown through edits/reopening and reload; no `updatedAt` or migration-time backfill is invented. At equal pickup times, known publication times precede unknown ones, with stable IDs for unknown/tied times. Discovery explains this fallback when older current samples are present. Focused checks cover these rules and local persistence. Real neighborhood filtering remains deferred to the approved shared-data stage.
+
 ## PRD acceptance coverage
 
 “Represented” below means evidence in the local demonstration, not service-backed acceptance.

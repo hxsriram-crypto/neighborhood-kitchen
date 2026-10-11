@@ -45,8 +45,10 @@ The URL/navigation change passed the targeted typecheck/build and eighteen domai
 
 Run domain/persistence checks from the workspace root:
 
+The local discovery correction adds seven focused checks for first-publication timestamps, edit/closure/reopening preservation, equal-pickup ordering, unknown legacy history, storage reload, fresh fixtures and cutoff expiry. All 33 current checks pass, along with the targeted typecheck/build. A preview screenshot confirms separate labeled pickup and contact/order cutoff information on the featured card. These checks do not add real neighborhoods or shared services.
+
 ```sh
-pnpm --filter @workspace/api-server exec esbuild ../neighborhood-kitchen/src/nk/prototype.test.ts ../neighborhood-kitchen/src/nk/publication.test.ts ../neighborhood-kitchen/src/nk/navigation.test.ts --bundle --platform=node --format=esm --outdir=/tmp/neighborhood-kitchen-tests
+pnpm --filter @workspace/api-server exec esbuild ../neighborhood-kitchen/src/nk/*.test.ts --bundle --platform=node --format=esm --outdir=/tmp/neighborhood-kitchen-tests
 node --test /tmp/neighborhood-kitchen-tests/*.js
 ```
 

@@ -8,6 +8,8 @@ export function reviseOffer(previous: Offer | undefined, next: Offer, now: numbe
     ...structuredClone(next),
     version: previous ? previous.version + 1 : next.status === "draft" ? 0 : 1,
     updatedAt: new Date(now).toISOString(),
+    // Editor input must never replace publication history, including an unknown legacy time.
+    publishedAt: previous?.publishedAt,
     revisions: previous ? [...structuredClone(previous.revisions ?? []), structuredClone(snapshot as OfferRevision)] : [],
   };
 }
@@ -24,6 +26,11 @@ export function prepareOfferSave(input: Offer, previous: Offer | undefined, cook
     };
     const errors = validatePublish(offer, cook, now, previous?.status === "published");
     if (errors.length) return { errors, offer: undefined };
+    // Only a first publication has a knowable time. Reopening an older closed
+    // sample or editing an older published sample must not invent its history.
+    const firstPublication = !previous || (previous.status === "draft" &&
+      !previous.revisions?.some((revision) => revision.status !== "draft"));
+    if (firstPublication && !offer.publishedAt) offer.publishedAt = new Date(now).toISOString();
   }
   return { errors: [], offer };
 }
