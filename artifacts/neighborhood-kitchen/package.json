@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:helper:browser": "playwright test",
     "test:navigation:browser": "playwright test --config playwright.navigation.config.ts",
+    "test:discovery:browser": "playwright test --config playwright.discovery.config.ts",
     "typecheck:browser": "tsc -p tsconfig.browser.json --noEmit"
   },
   "devDependencies": {

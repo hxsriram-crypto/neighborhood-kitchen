@@ -62,3 +62,12 @@ Build checks outside the managed workflow need the artifact's non-secret routing
 PORT=23820 BASE_PATH=/ pnpm --filter @workspace/neighborhood-kitchen run build
 pnpm --filter @workspace/neighborhood-kitchen run typecheck
 ```
+
+Run the focused open-browse clock regressions:
+
+```sh
+pnpm --filter @workspace/neighborhood-kitchen run test:discovery:browser
+pnpm --filter @workspace/neighborhood-kitchen run typecheck:browser
+```
+
+The four clock checks use a disposable static build, isolated browser storage and fictional meals. They verify simultaneous contact-cutoff expiry, featured-offer replacement, next-deadline timer rearming and final empty states, filtered-list expiry without losing search text, and independent focus/visibility refresh at cutoff equality while scheduled timers remain paused. Timer assertions allow the existing 50ms scheduling cushion but run before the 15-second polling fallback. Background-tab checks simulate lifecycle signals explicitly rather than relying on headless tab visibility. No navigation/Back or helper restrictions are retested, no services or contact requests are permitted, and expiry must leave stored meals unchanged. Build/test outputs stay in the ignored `generated-artifacts/discovery-browser/` directory.
