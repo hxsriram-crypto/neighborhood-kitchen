@@ -96,7 +96,9 @@ These are published USD rates and cost models, not a quote or founder-approved b
 - Storage: obtain an explicit additional-service ceiling before uploads. A small example such as 1 GiB stored and 1 GiB outbound costs $0.065 for those two line items, **excluding operations and other account usage**. It is an illustration, not a monthly forecast.
 - Publishing and AI: separate costed approvals after the core walkthrough.
 
-The numeric spending ceiling and account billing permissions remain unresolved. Credits are a payment source, not a reason to treat usage as free.
+The founder confirmed control of the workspace and billing. The numeric spending ceiling remains unresolved. Credits are a payment source, not a reason to treat usage as free.
+
+A spending allowance agreed in chat is not automatically a configured billing limit. Replit provides usage alerts and a service shutdown limit under account Usage settings. The shutdown limit suspends usage-based services at the account threshold, but metering delays or work already in progress may cause a small overshoot. Account-wide controls may affect other projects/services; obtain explicit approval before changing them. See [Managing Your Spend](https://docs.replit.com/billing/managing-spend).
 
 ## 4. Core design boundaries
 
@@ -142,7 +144,7 @@ No service account signup, secret request, schema migration, package installatio
 ## 7. Decisions still needed
 
 1. Core framework/database/auth/storage choices are approved. Resolve the remaining prerequisites and obtain setup authorization; tool selection alone does not authorize provisioning.
-2. Set the additional-service spending ceiling and confirm who controls the workspace/billing and canonical repository.
+2. Set the additional-service spending ceiling. Workspace/billing control is confirmed; this Replit project remains the working source under the approved assumptions. Confirm any additional repository/access requirements before affected setup.
 3. Choose the fictional core's timezone, upload limits/form limits, test sign-in delivery, evidence retention, and operator access before dependent implementation.
 4. Before assistant work: exact model/embedding/index choice, verified vector capability, approved sample guidance, and call/time/session/monthly limits.
 5. Before any real pilot: separate jurisdiction, eligibility/legal/privacy/insurance/support decisions and explicit launch authorization.

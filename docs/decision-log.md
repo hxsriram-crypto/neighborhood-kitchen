@@ -32,7 +32,13 @@ The founder explicitly approved the recommended core stack:
 - Replit-managed Clerk Auth.
 - Replit App Storage.
 
-This selects the tools only. It does not authorize provisioning, spending, or functional development. Spending, ownership/access, and affected privacy/test settings remain approval gates. Real AI and publishing remain deferred.
+This selects the tools only. It does not authorize provisioning, spending, or functional development. Spending, required service access, and affected privacy/test settings remain approval gates. Real AI and publishing remain deferred.
+
+## Workspace and billing authority
+
+The founder confirmed: “I control the workspace and billing.”
+
+This resolves who can authorize setup. No numeric spending allowance has been approved, no billing controls have been configured by the agent, and no provisioning is authorized by this confirmation alone.
 
 ## Authorization gates
 

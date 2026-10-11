@@ -8,7 +8,7 @@ The founder has explicitly approved the mobile, tablet, and desktop wireframes a
 
 Unresolved product, design, architecture, vendor, cost, privacy, or scope choices require practical options and a recommendation followed by an explicit founder answer before dependent work. Proposed defaults are not approvals. Start technical setup proposals by asking for missing budget ceiling, workspace/repository ownership, and technical preferences.
 
-The founder approved React/Vite, the existing Express API, development PostgreSQL/Drizzle, Replit-managed Clerk Auth, and Replit App Storage. This selects tools only, not provisioning or implementation. A numeric spending ceiling, ownership/access, and affected privacy/test settings are still unresolved. Real AI and publishing remain deferred.
+The founder approved React/Vite, the existing Express API, development PostgreSQL/Drizzle, Replit-managed Clerk Auth, and Replit App Storage, and confirmed control of the workspace and billing. This selects tools only, not provisioning or implementation. A numeric spending ceiling, required service access, and affected privacy/test settings are still unresolved. Real AI and publishing remain deferred.
 
 ## Run & Operate
 
