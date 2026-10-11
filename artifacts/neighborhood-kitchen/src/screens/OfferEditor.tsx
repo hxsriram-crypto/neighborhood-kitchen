@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Minus, Plus, Trash2 } from "lucide-react";
 import { useStore, useUnsavedChanges } from "@/nk/store";
 import { SignInGate } from "@/nk/Gates";
@@ -9,10 +9,14 @@ import { ALLERGENS, DIETARY_TAGS, ME, type AllergenDecl, type Ingredient, type O
 const ORG: Organic[] = ["unknown", "not stated", "cook-reported organic", "not organic"];
 
 export default function OfferEditor() {
-  const { data, now, nav, go, upsertOffer, withdrawContact } = useStore();
+  const { data, now, nav, go, upsertOffer, withdrawContact, recoverableDrafts, recoveryStorage, saveRecoverableDraft, removeRecoverableDraft, clearRecoverableDrafts } = useStore();
   const existing = nav.editorId ? data.offers.find((o) => o.id === nav.editorId && o.cookId === ME) : undefined;
   const [f, setF] = useState<Offer>(() => ({ ...(existing ? structuredClone(existing) : { ...blankOffer(Date.now()), ...(nav.seed ?? {}) }), commitment: false, preparationConfirmation: undefined }));
-  const { markSaved, markSavedFields } = useUnsavedChanges(f, data.signedIn, !!nav.seed && !existing);
+  const [recoveryEnabled, setRecoveryEnabled] = useState(false);
+  const [recoveryDismissed, setRecoveryDismissed] = useState<string[]>([]);
+  const [recoveryError, setRecoveryError] = useState("");
+  const discardRecoverable = () => { if (recoveryEnabled) removeRecoverableDraft("offer", ME, f.id); };
+  const { markSaved, markSavedFields } = useUnsavedChanges(f, data.signedIn, !!nav.seed && !existing, discardRecoverable);
   const [errs, setErrs] = useState<string[]>([]);
   const [preview, setPreview] = useState(false);
   const [saved, setSaved] = useState("");
@@ -21,6 +25,40 @@ export default function OfferEditor() {
   const setIng = (i: number, p: Partial<Ingredient>) => set({ ingredients: f.ingredients.map((x, k) => (k === i ? { ...x, ...p } : x)) });
   const status = existing?.status ?? "draft";
   const stamp = (o: Offer): Offer => ({ ...o, cookId: ME, ingredients: o.ingredients.filter((i) => i.name.trim()) });
+  const pendingRecoveries = recoverableDrafts.filter((draft) => {
+    if (draft.kind !== "offer" || draft.identity !== ME || recoveryDismissed.includes(draft.id)) return false;
+    if (recoveryEnabled && draft.id === f.id) return false;
+    if (nav.editorId ? draft.id !== nav.editorId : data.offers.some((offer) => offer.id === draft.id)) return false;
+    const savedOffer = data.offers.find((offer) => offer.id === draft.id && offer.cookId === ME);
+    if (!savedOffer) return true;
+    const savedInput = { ...savedOffer, commitment: false, preparationConfirmation: undefined, revisions: undefined };
+    return JSON.stringify(savedInput) !== JSON.stringify(draft.value);
+  }).filter((draft): draft is Extract<typeof draft, { kind: "offer" }> => draft.kind === "offer");
+
+  useEffect(() => {
+    if (!recoveryEnabled || !data.signedIn || pendingRecoveries.length > 0) return;
+    const timer = window.setTimeout(() => {
+      const value = { ...f, cookId: ME, commitment: false, preparationConfirmation: undefined, revisions: undefined };
+      if (!saveRecoverableDraft({ kind: "offer", identity: ME, id: f.id, value })) {
+        setRecoveryError("This browser could not save the recovery copy. The current edits remain in the form but may be lost if you leave.");
+      } else setRecoveryError("");
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [f, recoveryEnabled, data.signedIn, pendingRecoveries.length, saveRecoverableDraft]);
+
+  const discardRecovery = (id: string) => {
+    if (removeRecoverableDraft("offer", ME, id)) {
+      setRecoveryDismissed((ids) => [...ids, id]);
+      setRecoveryError("");
+    } else setRecoveryError("The recovery copy could not be deleted from this browser.");
+  };
+  const toggleRecovery = (enabled: boolean) => {
+    setRecoveryEnabled(enabled);
+    setRecoveryError("");
+    if (!enabled && !removeRecoverableDraft("offer", ME, f.id)) {
+      setRecoveryError("Recovery was turned off for this editor, but this browser could not delete its saved copy.");
+    }
+  };
   const saveDraft = () => {
     if (!f.title.trim()) { setErrs(["Add a meal name before saving."]); return; }
     const e = upsertOffer(stamp(f), status === "published" ? "Changes saved to your published offer." : status === "closed" ? "Changes saved; offer stays closed." : "Draft saved.", f.commitment);
@@ -28,12 +66,14 @@ export default function OfferEditor() {
     const next = { ...f, commitment: false, preparationConfirmation: undefined };
     markSaved(next);
     setF(next);
+    setRecoveryEnabled(false);
     setSaved(status === "published" ? "Changes saved to the published offer." : "Draft saved.");
   };
   const publish = (reopen: boolean) => {
     const e = upsertOffer({ ...stamp(f), status: "published" }, reopen ? "Offer reopened by you and published." : "Offer published.", f.commitment);
     setErrs(e); if (e.length) return;
     markSaved();
+    setRecoveryEnabled(false);
     go("My cooking");
   };
   const pStart = pickupStartMs(f), pEnd = pickupEndMs(f), dl = deadlineMs(f);
@@ -41,6 +81,16 @@ export default function OfferEditor() {
   const blocked = me?.status !== "approved";
   return <div className="max-w-4xl"><PageTitle eyebrow="Offer editor · demo draft" title={existing ? "Edit your offer." : "Describe an upcoming meal."} sub="Validation runs on this device only. Published offers appear to neighbors in this browser, nothing is shared." />
     <SignInGate why="Sign in (simulated) to create or edit offers.">
+      {recoveryStorage === "corrupt" && <Notice tone="red" testid="status-recovery-corrupt"><b>Interrupted draft recovery data could not be read.</b> It has not been restored. <Btn testid="button-clear-corrupt-recovery" onClick={() => { if (clearRecoverableDrafts()) setRecoveryError(""); else setRecoveryError("Unreadable recovery data could not be deleted."); }}>Delete unreadable recovery data</Btn></Notice>}
+      {recoveryStorage === "unavailable" && <Notice tone="gold" testid="status-recovery-unavailable"><b>Browser-local recovery is unavailable.</b> Drafts cannot be protected against a crash in this browser.</Notice>}
+      {recoveryError && <Notice tone="gold" testid="status-recovery-error">{recoveryError}</Notice>}
+      {pendingRecoveries.length > 0 && <Notice tone="gold" testid="panel-offer-recovery"><b>Interrupted offer draft found.</b> Choose whether to restore or delete it. Restoring only fills this form; the preparation confirmation is cleared and nothing is published.
+        <div className="mt-3 space-y-2">{pendingRecoveries.map((draft) => <div key={draft.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-[#e5e9e0] bg-white/70 p-3"><span className="mr-auto text-sm">{draft.value.title.trim() || "Untitled meal"} · expires {new Date(draft.expiresAt).toLocaleDateString()}</span><Btn testid={"button-restore-offer-" + draft.id} onClick={() => { setF({ ...draft.value, commitment: false, preparationConfirmation: undefined, revisions: undefined }); setRecoveryEnabled(true); setRecoveryDismissed((ids) => [...ids, draft.id]); setErrs([]); setSaved(""); }}>Restore draft</Btn><Btn testid={"button-discard-offer-recovery-" + draft.id} variant="plain" onClick={() => discardRecovery(draft.id)}>Discard copy</Btn></div>)}</div>
+      </Notice>}
+      <div className="mb-4 rounded-xl border border-[#e5e9e0] bg-white/70 p-3">
+        <label className="flex items-start gap-2 text-sm font-semibold"><input data-testid="check-offer-recovery" type="checkbox" className="mt-1 accent-[#365b4b]" checked={recoveryEnabled} disabled={recoveryStorage !== "ok" || (!recoveryEnabled && pendingRecoveries.length > 0)} onChange={(e) => toggleRecovery(e.target.checked)} />Recover this offer draft after an interruption</label>
+        <p className="mt-1 pl-6 text-xs text-[#718075]">Opt in for this draft. Use fictional demo values only—do not enter real names, contact details or personal data. The copy stays in this browser for up to 7 days; saving/publishing, discarding, reset or expiry removes it. Preparation confirmation is never recovered.</p>
+      </div>
       {nav.seed && !existing && <Notice tone="green">Draft fields came from the scripted helper using only what you typed. Nothing is saved or published yet; review everything below.</Notice>}
       {blocked && <Notice tone="red" testid="status-publish-blocked"><b>Publishing is blocked.</b> Cook eligibility is {me?.status === "none" ? "not applied" : me?.status}. You can still save drafts.</Notice>}
       {status === "closed" && <Notice tone="gold"><b>This offer is closed.</b> It will not reopen on its own. Fix any problems, then use Reopen offer.</Notice>}

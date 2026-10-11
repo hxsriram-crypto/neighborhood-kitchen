@@ -10,7 +10,7 @@ const targets = [
 
 export default defineConfig({
   ...browserConfig,
-  testMatch: "navigation.spec.ts",
+  testMatch: /(?:navigation|recovery)\.spec\.ts/,
   outputDir: "../../generated-artifacts/navigation-browser/results",
   projects: targets.map(({ name, port, base }) => ({
     name,

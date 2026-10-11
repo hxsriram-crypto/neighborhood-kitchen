@@ -2,3 +2,4 @@
 - [Helper unknown allergens](helper-unknown-allergens.md) — founder chose inclusion with prominent warnings and a reminder to confirm with the cook, not silent exclusion.
 - [Local publication ordering](publication-ordering.md) — first publication survives reopening; older missing history stays unknown rather than using edit or migration time.
 - [Unsaved-form browser checks](unsaved-form-browser-checks.md) — finish application edits before testing retained input; development hot updates can reset forms.
+- [Interrupted draft recovery](draft-recovery-policy.md) — fictional offer and application drafts are opted in per draft, kept seven days in this browser, and cleared on explicit completion or discard.

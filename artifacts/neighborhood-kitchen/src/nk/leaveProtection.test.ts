@@ -19,6 +19,18 @@ test("independent form guards combine, and unregistering one preserves the other
   assert.equal(registry.shouldWarn(), false);
 });
 
+test("explicit discard runs cleanup only for dirty forms", () => {
+  const registry = createUnsavedChangeRegistry();
+  let dirty = false;
+  let discarded = 0;
+  registry.register(() => dirty, () => { discarded++; });
+  registry.discardDirty();
+  assert.equal(discarded, 0);
+  dirty = true;
+  registry.discardDirty();
+  assert.equal(discarded, 1);
+});
+
 function browser() {
   const events = new EventTarget();
   const entries = [{ state: { nk: { key: 1 } } as Record<string, unknown>, url: "https://demo.test/" }];

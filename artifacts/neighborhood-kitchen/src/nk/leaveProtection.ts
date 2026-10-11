@@ -2,15 +2,20 @@ type EntryState = { nkIndex?: number; [key: string]: unknown } | null;
 
 /** Track every mounted form independently so one registration cannot replace another. */
 export function createUnsavedChangeRegistry() {
-  const entries = new Map<symbol, () => boolean>();
+  const entries = new Map<symbol, { isDirty: () => boolean; onDiscard?: () => void }>();
   return {
-    register(isDirty: () => boolean) {
+    register(isDirty: () => boolean, onDiscard?: () => void) {
       const key = Symbol();
-      entries.set(key, isDirty);
+      entries.set(key, { isDirty, onDiscard });
       return () => { entries.delete(key); };
     },
     shouldWarn() {
-      return [...entries.values()].some((isDirty) => isDirty());
+      return [...entries.values()].some(({ isDirty }) => isDirty());
+    },
+    discardDirty() {
+      for (const { isDirty, onDiscard } of entries.values()) {
+        if (isDirty()) onDiscard?.();
+      }
     },
   };
 }

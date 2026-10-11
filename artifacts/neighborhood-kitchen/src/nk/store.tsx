@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { Application, CookStatus, Data, Offer, OfferStatus, Report, Screen } from "./types";
 import { ME } from "./types";
-import { load, resetStorage, save, type StorageStatus } from "./storage";
+import { clearRecoverableDrafts, load, loadRecoverableDrafts, RECOVERY_RETENTION_MS, removeRecoverableDraft, resetStorage, save, saveRecoverableDraft as persistRecoverableDraft, type RecoverableDraft, type StorageStatus } from "./storage";
 import { CUSTOMER_REMINDER, deadlineMs } from "./domain";
 import { prepareOfferSave, publicationMessage, reviseOffer, withdrawOfferConsent } from "./publication";
 import { useLocation, useRouter } from "wouter";
@@ -15,12 +15,16 @@ interface NavigationState { nkIndex?: number; nk?: { key: number; seed?: Partial
 export interface Flash { id: number; text: string; tone: "green" | "red" | "gold" }
 interface Store {
   data: Data; now: number; storage: StorageStatus; nav: Nav; flash: Flash | null; clearFlash: () => void;
+  recoverableDrafts: RecoverableDraft[]; recoveryStorage: StorageStatus;
+  saveRecoverableDraft: (draft: { kind: "offer"; identity: string; id: string; value: Offer } | { kind: "application"; identity: string; id: string; value: Application }) => boolean;
+  removeRecoverableDraft: (kind: RecoverableDraft["kind"], identity: string, id: string) => boolean;
+  clearRecoverableDrafts: () => boolean;
   go: (screen: Screen, o?: NavOptions) => void;
-  registerUnsavedChanges: (isDirty: () => boolean) => () => void;
+  registerUnsavedChanges: (isDirty: () => boolean, onDiscard?: () => void) => () => void;
   signIn: () => void; signOut: () => void; setOperator: (v: boolean) => void; setPhoneConsent: (v: boolean) => void;
   upsertOffer: (o: Offer, msg: string, confirmed?: boolean) => string[]; closeOffer: (id: string) => void;
   withdrawContact: (id: string) => void;
-  saveApplication: (a: Application, status: CookStatus) => void; restartApplication: () => void;
+  saveApplication: (a: Application, status: CookStatus) => boolean; restartApplication: () => void;
   submitReport: (r: Omit<Report, "id" | "createdAt" | "status">) => void;
   setCookStatus: (id: string, status: CookStatus, note: string) => void; setModerated: (offerId: string, v: boolean, note: string) => void;
   resolveReport: (id: string, note: string) => void; resetAll: () => void;
@@ -29,13 +33,13 @@ const Ctx = createContext<Store | null>(null);
 export const useStore = () => { const c = useContext(Ctx); if (!c) throw new Error("StoreProvider missing"); return c; };
 
 /** Compare against the last successful save, not simply whether input was touched. */
-export function useUnsavedChanges<T>(value: T, enabled: boolean, initiallyUnsaved = false) {
+export function useUnsavedChanges<T>(value: T, enabled: boolean, initiallyUnsaved = false, onDiscard?: () => void) {
   const { registerUnsavedChanges } = useStore();
   const snapshot = JSON.stringify(value);
   const baseline = useRef<string | null>(initiallyUnsaved ? null : snapshot);
   const dirty = useRef(false);
   useLayoutEffect(() => { dirty.current = enabled && snapshot !== baseline.current; });
-  useLayoutEffect(() => registerUnsavedChanges(() => dirty.current), [registerUnsavedChanges]);
+  useLayoutEffect(() => registerUnsavedChanges(() => dirty.current, onDiscard), [registerUnsavedChanges, onDiscard]);
   return {
     markSaved: (savedValue: T = value) => {
       baseline.current = JSON.stringify(savedValue);
@@ -51,10 +55,13 @@ export function useUnsavedChanges<T>(value: T, enabled: boolean, initiallyUnsave
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [boot] = useState(() => load(Date.now()));
+  const [recoveryBoot] = useState(() => loadRecoverableDrafts(Date.now()));
   const [data, setData] = useState<Data>(boot.data);
   const dataRef = useRef(data);
   const [storage, setStorage] = useState<StorageStatus>(boot.status);
   const storageRef = useRef(boot.status);
+  const [recoverableDrafts, setRecoverableDrafts] = useState<RecoverableDraft[]>(recoveryBoot.drafts);
+  const [recoveryStorage, setRecoveryStorage] = useState<StorageStatus>(recoveryBoot.status);
   const [now, setNow] = useState(Date.now());
   const [, navigate] = useLocation();
   const { base } = useRouter();
@@ -64,8 +71,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [unsaved] = useState(() => createUnsavedChangeRegistry());
   const [leaveRequest, setLeaveRequest] = useState<{ leave: () => void } | null>(null);
   const protection = useRef<ReturnType<typeof protectUnsavedNavigation> | null>(null);
-  const registerUnsavedChanges = useCallback((isDirty: () => boolean) => {
-    return unsaved.register(isDirty);
+  const registerUnsavedChanges = useCallback((isDirty: () => boolean, onDiscard?: () => void) => {
+    return unsaved.register(isDirty, onDiscard);
   }, []);
   useLayoutEffect(() => {
     const guard = protectUnsavedNavigation(
@@ -103,6 +110,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     window.scrollTo({ top: 0 });
   }, [location, historyState]);
 
+  const removeRecovery = useCallback((kind: RecoverableDraft["kind"], identity: string, id: string) => {
+    const ok = removeRecoverableDraft(kind, identity, id);
+    if (ok) {
+      setRecoverableDrafts((drafts) => drafts.filter((draft) =>
+        !(draft.kind === kind && draft.identity === identity && draft.id === id)));
+      setRecoveryStorage("ok");
+    } else if (recoveryStorage !== "corrupt") {
+      setRecoveryStorage("unavailable");
+    }
+    return ok;
+  }, [recoveryStorage]);
+
+  const saveRecovery = useCallback((input: { kind: "offer"; identity: string; id: string; value: Offer } | { kind: "application"; identity: string; id: string; value: Application }) => {
+    if (input.identity !== ME || (input.kind === "offer" && (input.id !== input.value.id || input.value.cookId !== ME)) ||
+        (input.kind === "application" && input.id !== ME)) return false;
+    const savedAt = Date.now();
+    const draft: RecoverableDraft = input.kind === "offer"
+      ? { ...input, value: { ...input.value, commitment: false, preparationConfirmation: undefined, revisions: undefined }, savedAt, expiresAt: savedAt + RECOVERY_RETENTION_MS }
+      : { ...input, value: { ...input.value, submittedAt: undefined }, savedAt, expiresAt: savedAt + RECOVERY_RETENTION_MS };
+    if (!persistRecoverableDraft(draft)) {
+      setRecoveryStorage(recoveryStorage === "corrupt" ? "corrupt" : "unavailable");
+      return false;
+    }
+    setRecoverableDrafts((drafts) => [
+      ...drafts.filter((current) => !(current.kind === draft.kind && current.identity === draft.identity && current.id === draft.id)),
+      draft,
+    ]);
+    setRecoveryStorage("ok");
+    return true;
+  }, [recoveryStorage]);
+
+  const clearAllRecovery = useCallback(() => {
+    const ok = clearRecoverableDrafts();
+    if (ok) { setRecoverableDrafts([]); setRecoveryStorage("ok"); }
+    else setRecoveryStorage("unavailable");
+    return ok;
+  }, []);
+
   const commit = useCallback((fn: (d: Data) => Data, msg: string) => {
     const next = fn(dataRef.current);
     dataRef.current = next; setData(next);
@@ -110,6 +155,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (storageRef.current === "ok") { ok = save(next); if (!ok) { storageRef.current = "unavailable"; setStorage("unavailable"); } }
     if (ok) notify(msg + " Saved in this browser only.");
     else notify(msg + " NOT saved: " + (storageRef.current === "corrupt" ? "stored data is unreadable; reset sample data to resume saving." : "browser storage is unavailable, so this lasts only until reload."), "gold");
+    return ok;
   }, [notify]);
 
   // Clock: interval, focus/visibility, and a precise timer at the next deadline.
@@ -127,11 +173,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const id = window.setTimeout(() => setNow(Date.now()), Math.min(next - t + 50, 2147000000));
     return () => window.clearTimeout(id);
   }, [data.offers, now]);
+  useEffect(() => {
+    const nextExpiry = recoverableDrafts.map((draft) => draft.expiresAt).sort((a, b) => a - b)[0];
+    if (nextExpiry === undefined) return;
+    const timer = window.setTimeout(() => {
+      const result = loadRecoverableDrafts(Date.now());
+      setRecoverableDrafts(result.drafts);
+      setRecoveryStorage(result.status);
+    }, Math.max(0, nextExpiry - Date.now() + 1));
+    return () => window.clearTimeout(timer);
+  }, [recoverableDrafts]);
 
   const audit = (d: Data, action: string, target: string, note: string, actor = "Operator (demo)"): Data => ({ ...d, audit: [{ id: "a" + Date.now().toString(36) + d.audit.length, at: new Date().toISOString(), actor, action, target, note }, ...d.audit] });
 
   const store: Store = {
     data, now, storage, nav, flash, clearFlash: () => setFlash(null),
+    recoverableDrafts, recoveryStorage, saveRecoverableDraft: saveRecovery,
+    removeRecoverableDraft: removeRecovery, clearRecoverableDrafts: clearAllRecovery,
     go, registerUnsavedChanges,
     signIn: () => commit((d) => ({ ...d, signedIn: true }), "Signed in as the simulated neighbor Alex Larkin (not real authentication)."),
     signOut: () => {
@@ -146,13 +204,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const result = prepareOfferSave(input, previous, current.cooks.find((c) => c.id === ME), Date.now(), confirmed);
       if (!result.offer) return result.errors;
       const offer = result.offer;
-      commit((d) => ({ ...d, offers: previous ? d.offers.map((x) => x.id === offer.id ? offer : x) : [...d.offers, offer] }), offer.status === "draft" ? msg : publicationMessage(msg));
+      const persisted = commit((d) => ({ ...d, offers: previous ? d.offers.map((x) => x.id === offer.id ? offer : x) : [...d.offers, offer] }), offer.status === "draft" ? msg : publicationMessage(msg));
+      if (!persisted) return ["The offer changed in this session but was not saved to browser storage. Its recovery copy was kept."];
+      if (!removeRecovery("offer", ME, offer.id)) notify("Offer saved, but its interrupted-draft recovery copy could not be removed from this browser. It may remain until expiry or sample reset.", "gold");
       return [];
     },
     closeOffer: (id) => commit((d) => ({ ...d, offers: d.offers.map((o) => (o.id === id && o.cookId === ME && d.signedIn ? reviseOffer(o, { ...o, status: "closed" as OfferStatus }, Date.now()) : o)) }), "Offer closed. It is hidden from discovery and contact is blocked. " + CUSTOMER_REMINDER),
     withdrawContact: (id) => commit((d) => ({ ...d, offers: d.offers.map((o) => o.id === id && o.cookId === ME && d.signedIn ? withdrawOfferConsent(o, Date.now()) : o) }), "Cook contact consent withdrawn. The offer is hidden from discovery and its sample route is blocked immediately. " + CUSTOMER_REMINDER),
-    saveApplication: (a, status) => commit((d) => audit({ ...d, applications: { ...d.applications, [ME]: a }, cooks: d.cooks.map((c) => (c.id === ME ? { ...c, name: a.name.trim() || c.name, status } : c)) }, status === "pending" ? "Application submitted" : "Application draft saved", "Alex Larkin", status === "pending" ? "Awaiting operator decision." : "Incomplete application saved.", "Alex Larkin (demo)"), status === "pending" ? "Application submitted and pending review." : "Application draft saved."),
-    restartApplication: () => commit((d) => audit({ ...d, cooks: d.cooks.map((c) => (c.id === ME ? { ...c, status: "none" as CookStatus } : c)), applications: { ...d.applications, [ME]: { ...d.applications[ME], residential: false, jurisdiction: false, disclosures: false, evidenceSample: false, submittedAt: undefined } } }, "Restarted as new applicant", "Alex Larkin", "Demo shortcut to try application-to-approval.", "Alex Larkin (demo)"), "Restarted as a new applicant. Your offers are hidden until you are approved again."),
+    saveApplication: (a, status) => {
+      const persisted = commit((d) => audit({ ...d, applications: { ...d.applications, [ME]: a }, cooks: d.cooks.map((c) => (c.id === ME ? { ...c, name: a.name.trim() || c.name, status } : c)) }, status === "pending" ? "Application submitted" : "Application draft saved", "Alex Larkin", status === "pending" ? "Awaiting operator decision." : "Incomplete application saved.", "Alex Larkin (demo)"), status === "pending" ? "Application submitted and pending review." : "Application draft saved.");
+      if (persisted && !removeRecovery("application", ME, ME)) notify("Application saved, but its interrupted-draft recovery copy could not be removed from this browser. It may remain until expiry or sample reset.", "gold");
+      return persisted;
+    },
+    restartApplication: () => {
+      const persisted = commit((d) => audit({ ...d, cooks: d.cooks.map((c) => (c.id === ME ? { ...c, status: "none" as CookStatus } : c)), applications: { ...d.applications, [ME]: { ...d.applications[ME], residential: false, jurisdiction: false, disclosures: false, evidenceSample: false, submittedAt: undefined } } }, "Restarted as new applicant", "Alex Larkin", "Demo shortcut to try application-to-approval.", "Alex Larkin (demo)"), "Restarted as a new applicant. Your offers are hidden until you are approved again.");
+      if (persisted && !removeRecovery("application", ME, ME)) notify("Application reset in the demo, but its interrupted-draft recovery copy could not be removed from this browser. It may remain until expiry or sample reset.", "gold");
+    },
     submitReport: (r) => commit((d) => audit({ ...d, reports: [{ ...r, id: "r" + Date.now().toString(36), createdAt: new Date().toISOString(), status: "open" }, ...d.reports] }, "Report filed", r.targetLabel, r.reason, "Neighbor (demo)"), "Report saved to the operator queue."),
     setCookStatus: (id, status, note) => commit((d) => audit({ ...d, cooks: d.cooks.map((c) => (c.id === id ? { ...c, status } : c)) }, "Cook " + status, d.cooks.find((c) => c.id === id)?.name ?? id, note || "No reason entered."), "Cook marked " + status + ". Offers and contact update immediately."),
     setModerated: (id, v, note) => commit((d) => audit({ ...d, offers: d.offers.map((o) => (o.id === id ? reviseOffer(o, { ...o, moderated: v }, Date.now()) : o)) }, v ? "Offer suspended" : "Offer restored", d.offers.find((o) => o.id === id)?.title ?? id, note || "No reason entered."), v ? "Offer suspended and hidden." : "Offer restored."),
@@ -161,8 +228,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       protection.current?.requestLeave(() => {
         const r = resetStorage(Date.now());
         dataRef.current = r.data; setData(r.data); storageRef.current = r.status; setStorage(r.status);
+        setRecoverableDrafts([]); setRecoveryStorage(r.status);
         navigate("/", { replace: true, state: { nkIndex: protection.current!.currentIndex() } });
-        notify(r.status === "ok" ? "Sample data reset. Stored again in this browser only." : "Sample data reset in memory, but browser storage is unavailable so nothing is saved.", r.status === "ok" ? "green" : "gold");
+        notify(r.status === "ok" ? "Sample data reset. Stored again in this browser only." : "Sample data reset in memory, but browser storage did not confirm the reset; saved data or recovery copies may remain.", r.status === "ok" ? "green" : "gold");
       });
     },
   };
@@ -175,7 +243,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel data-testid="button-stay-editing">Stay and keep editing</AlertDialogCancel>
-          <AlertDialogAction data-testid="button-discard-leave" onClick={() => { const leave = leaveRequest?.leave; setLeaveRequest(null); leave?.(); }}>Discard and leave</AlertDialogAction>
+          <AlertDialogAction data-testid="button-discard-leave" onClick={() => { const leave = leaveRequest?.leave; unsaved.discardDirty(); setLeaveRequest(null); leave?.(); }}>Discard and leave</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
