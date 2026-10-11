@@ -22,9 +22,21 @@ The founder approved using the recommended assumptions to prepare the technical 
 
 These are proposal inputs only. They do not approve the provider recommendations in [the technical proposal](technical-proposal.md), a numeric budget, service provisioning, or functional development.
 
+## Founder-approved core technical choices
+
+The founder explicitly approved the recommended core stack:
+
+- React/Vite responsive web UI based on the approved wireframes.
+- Existing Express API.
+- Development PostgreSQL with Drizzle.
+- Replit-managed Clerk Auth.
+- Replit App Storage.
+
+This selects the tools only. It does not authorize provisioning, spending, or functional development. Spending, ownership/access, and affected privacy/test settings remain approval gates. Real AI and publishing remain deferred.
+
 ## Authorization gates
 
-The founder explicitly approved the current mobile, tablet, and desktop wireframes. The wireframe-review gate is satisfied; the next stage is proposing the technical setup.
+The founder explicitly approved the current mobile, tablet, and desktop wireframes and the recommended core technical choices. The next stage is resolving setup prerequisites, not functional development.
 
 - Wireframes are visual and simulated only.
 - Wireframe approval does not approve vendors, spending, provisioning, functional implementation, or live operation.

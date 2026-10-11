@@ -4,11 +4,11 @@ A lightweight web marketplace bringing neighbors together: residential cooks and
 
 ## Current authorization
 
-The founder has explicitly approved the mobile, tablet, and desktop wireframes. The current stage is proposing the technical setup. Do not begin functional development or provision dependent services until technical choices and budget are explicitly approved. Do not enable real contact, real participant notifications, or live food activity.
+The founder has explicitly approved the mobile, tablet, and desktop wireframes and the recommended core technical stack. The current stage is resolving setup prerequisites. Do not begin functional development or provision dependent services until spending, ownership/access, and affected privacy/test settings are explicitly approved and setup is authorized. Do not enable real contact, real participant notifications, or live food activity.
 
 Unresolved product, design, architecture, vendor, cost, privacy, or scope choices require practical options and a recommendation followed by an explicit founder answer before dependent work. Proposed defaults are not approvals. Start technical setup proposals by asking for missing budget ceiling, workspace/repository ownership, and technical preferences.
 
-The founder approved the baseline assumptions for preparing the technical proposal: reuse the scaffold, one source of truth, no new service-cost commitments before approval, and real AI after the core. Provider choices and a numeric spending ceiling are still unresolved.
+The founder approved React/Vite, the existing Express API, development PostgreSQL/Drizzle, Replit-managed Clerk Auth, and Replit App Storage. This selects tools only, not provisioning or implementation. A numeric spending ceiling, ownership/access, and affected privacy/test settings are still unresolved. Real AI and publishing remain deferred.
 
 ## Run & Operate
 
@@ -19,9 +19,9 @@ The founder approved the baseline assumptions for preparing the technical propos
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Template database env for possible later use: `DATABASE_URL` — not required for visual wireframes
 
-## Template stack (not approved product architecture)
+## Template tooling
 
-These packages were supplied with the project template. Their presence is not founder approval to use them for the functional product.
+These packages were supplied with the project template. The core choices explicitly approved above may be reused after setup authorization; other template tooling is not approved merely by being present.
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - API: Express 5
@@ -57,4 +57,4 @@ _Populate as you build — sharp edges, "always run X before Y" rules._
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
 - [Document review and source-document links](docs/document-review.md)
 - [Founder decision log and authorization gates](docs/decision-log.md)
-- [Technical proposal, costs, setup checklist, and PRD-linked backlog](docs/technical-proposal.md) — recommendations only, not implementation approval
+- [Technical proposal, costs, setup checklist, and PRD-linked backlog](docs/technical-proposal.md) — core stack selected; setup and implementation not yet authorized

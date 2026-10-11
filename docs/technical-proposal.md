@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposal only. Not authorization to provision services, install packages, implement features, incur charges, or publish.**
+**Core stack selected by the founder. Not authorization to provision services, install packages, implement features, incur charges, or publish.**
 
 The founder approved the mobile, tablet, and desktop wireframes and approved these assumptions for preparing this proposal:
 
@@ -11,13 +11,13 @@ The founder approved the mobile, tablet, and desktop wireframes and approved the
 - Make no new service-cost commitments before explicit approval.
 - Build the functional core before enabling real AI.
 
-This does not establish a numeric budget ceiling or select providers for implementation.
+The founder subsequently approved React/Vite, the existing Express API, development PostgreSQL/Drizzle, Replit-managed Clerk Auth, and Replit App Storage. This tool selection does not establish a numeric budget ceiling or authorize setup or implementation.
 
 ## 1. Recommendation
 
 Build a responsive React + Vite web app from the approved wireframes, reuse the Express API and PostgreSQL/Drizzle tooling, and keep the functional prototype development-only with fictional records.
 
-Use Replit-managed Clerk Auth for independent Neighborhood Kitchen accounts, subject to approval. Use Replit App Storage for persistent meal media and restricted application evidence, subject to a spending allowance and approved upload/privacy rules. Keep all contact actions inert and disable participant notifications and real food activity.
+Use the approved Replit-managed Clerk Auth choice for independent Neighborhood Kitchen accounts after setup authorization. Use the approved Replit App Storage choice for persistent meal media and restricted application evidence, subject to a spending allowance and approved upload/privacy rules. Keep all contact actions inert and disable participant notifications and real food activity.
 
 Do not add another hosting provider, database service, vector service, payment service, or messaging service to the core merely to make it feel complete.
 
@@ -141,7 +141,7 @@ No service account signup, secret request, schema migration, package installatio
 
 ## 7. Decisions still needed
 
-1. Approve or revise the proposed core framework/database/auth/storage choices. Approval of proposal assumptions alone did not select providers.
+1. Core framework/database/auth/storage choices are approved. Resolve the remaining prerequisites and obtain setup authorization; tool selection alone does not authorize provisioning.
 2. Set the additional-service spending ceiling and confirm who controls the workspace/billing and canonical repository.
 3. Choose the fictional core's timezone, upload limits/form limits, test sign-in delivery, evidence retention, and operator access before dependent implementation.
 4. Before assistant work: exact model/embedding/index choice, verified vector capability, approved sample guidance, and call/time/session/monthly limits.
