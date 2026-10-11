@@ -4,10 +4,22 @@ import { makeSeed } from "./seed";
 const KEY = "neighborhood-kitchen-prototype-v1";
 export type StorageStatus = "ok" | "corrupt" | "unavailable";
 
+function validOffer(value: unknown, snapshot = false): boolean {
+  const o = value as Data["offers"][number];
+  if (!o || typeof o.id !== "string" || !Array.isArray(o.ingredients) || !o.allergens || typeof o.allergens !== "object") return false;
+  if (o.otherAllergens !== undefined && typeof o.otherAllergens !== "string") return false;
+  const confirmation = o.preparationConfirmation;
+  if (confirmation !== undefined && (!confirmation || typeof confirmation.statementVersion !== "string" ||
+      typeof confirmation.confirmedAt !== "string" || typeof confirmation.pickupDate !== "string" ||
+      !Number.isInteger(confirmation.offerVersion))) return false;
+  // Older browser-local samples need no invented confirmations or revision history.
+  return o.revisions === undefined || (!snapshot && Array.isArray(o.revisions) && o.revisions.every((r) => validOffer(r, true)));
+}
+
 function valid(d: unknown): d is Data {
   const x = d as Data;
   return !!x && x.version === 1 && Array.isArray(x.offers) && Array.isArray(x.cooks) && Array.isArray(x.reports) && Array.isArray(x.audit) && !!x.applications && typeof x.applications === "object"
-    && x.offers.every((o) => o && typeof o.id === "string" && Array.isArray(o.ingredients) && o.allergens && typeof o.allergens === "object")
+    && x.offers.every((o) => validOffer(o))
     && x.cooks.every((c) => c && typeof c.id === "string");
 }
 export function save(d: Data): boolean {

@@ -1,4 +1,5 @@
 import { ALLERGENS, type Application, type Data, type Ingredient, type Offer, type Organic } from "./types";
+import { PREPARATION_VERSION } from "./domain";
 
 const ing = (name: string, source = "", organic: Organic = "unknown"): Ingredient => ({ name, source, organic });
 const al = (present: string[] = [], absent: string[] = []) => Object.fromEntries(ALLERGENS.map((a) => [a, present.includes(a) ? "present" : absent.includes(a) ? "absent" : "unknown"])) as Offer["allergens"];
@@ -17,6 +18,13 @@ export function makeSeed(now: number): Data {
     { ...common, id: "oldloaf", cookId: "me", title: "Lemon cardamom loaf", description: "A tender loaf with lemon zest and cardamom.", price: "7.50", cuisine: "Baking", portion: "Half loaf, about 8 slices", ingredients: [ing("Wheat flour"), ing("Butter"), ing("Eggs"), ing("Lemon")], allergens: al(["Wheat", "Milk", "Egg"]), crossContact: "unknown", condition: "Chilled", handling: "Keep wrapped at room temperature for a day; cook-provided.", tags: ["Vegetarian"], pickupDate: day(1), pickupStart: "17:00", pickupEnd: "19:00", deadlineDate: day(-1), deadlineTime: "18:00", commitment: true, status: "published", art: "peach" },
   ];
   const app = (name: string, extra: Partial<Application> = {}): Application => ({ name, neighborhood: "Maplewood", setting: "My own residential kitchen", permitAgency: "", permitNumber: "", permitExpiry: "", evidenceSample: false, residential: true, jurisdiction: true, disclosures: true, updatedAt: iso, ...extra });
+  for (const offer of offers) {
+    offer.otherAllergens = "";
+    offer.revisions = [];
+    if (offer.commitment) offer.preparationConfirmation = {
+      statementVersion: PREPARATION_VERSION, confirmedAt: iso, pickupDate: offer.pickupDate, offerVersion: offer.version,
+    };
+  }
   return {
     version: 1, signedIn: false, operator: false, phoneConsent: false, offers,
     cooks: [

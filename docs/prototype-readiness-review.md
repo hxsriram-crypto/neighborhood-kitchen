@@ -44,6 +44,12 @@ This was not a full interactive browser, keyboard, screen-reader, multi-user, se
 
 ## Actual gaps in the current demonstration
 
+### Follow-up status: consent and publication corrections
+
+The G2–G5 findings below describe the reviewed baseline. The browser-local fictional prototype now checks current cook consent at disclosure, hides withdrawn-consent offers from discovery (founder decision recorded in the decision log), supports other-allergen text, validates all nine declaration values and USD precision, requires fresh versioned preparation confirmation for publication/reopening/published edits, preserves local offer revisions, shows consumer last-updated time, and rejects moderated publication/reopening with feedback. My cooking routes reopening through explicit editor review.
+
+Fourteen focused domain/persistence/publication checks and the targeted typecheck/build pass. No real accounts, services, uploads, shared data, customer history, notifications, real contact or AI have been enabled. These corrections do not establish service-backed PRD acceptance or resolve the remaining gaps.
+
 ### G1 — The helper can ignore important meal restrictions
 
 **Priority: highest. PRD: AI02, T12, T13.**
@@ -196,7 +202,7 @@ Resolve jurisdiction/local obligations, residential eligibility verification, re
 | Decision | When needed | Recommendation, not approval |
 | --- | --- | --- |
 | Unknown allergens in strict avoidance requests | Before changing that helper policy | Exclude present and unknown declarations from a strict avoidance recommendation; ordinary browsing may show unknowns prominently. Confirm this interpretation with the founder. |
-| Visibility after cook contact-consent withdrawal | Before implementing withdrawal flow | Disable disclosure immediately; decide whether the offer remains readable without contact or is hidden. |
+| Visibility after cook contact-consent withdrawal | Resolved for local prototype | Founder chose hide from discovery and block contact; unavailable detail previews retain disclosures. No live-contact or retention policy approved. |
 | Kitchen timezone and local-time policy | Before shared scheduling | Select an explicit IANA kitchen timezone and require DST disambiguation; do not infer it silently from the browser. |
 | Input/photo/evidence limits and review access | Before affected forms/uploads | Narrow allowed fields/types/sizes and least-privilege access, with no real evidence during demo work. |
 | Retention/deletion, incident holds, and operator coverage | Before retaining real data or live reports | Approve policies and responsibilities before collection. |

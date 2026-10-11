@@ -1,6 +1,6 @@
 import { ArrowLeft, Sprout } from "lucide-react";
 import { useStore } from "@/nk/store";
-import { availability, cookName, fmtDeadline, fmtLong, fmtDay, fmtWindow, ingredientLine, money } from "@/nk/domain";
+import { availability, canDiscloseContact, cookName, fmtDeadline, fmtLong, fmtDay, fmtStamp, fmtWindow, ingredientLine, money } from "@/nk/domain";
 import { ALLERGENS } from "@/nk/types";
 import { Avatar, Btn, MealArt, Notice } from "@/nk/ui";
 import { ReportForm } from "@/nk/ReportForm";
@@ -12,29 +12,31 @@ export default function OfferDetail() {
   const cook = data.cooks.find((c) => c.id === o.cookId);
   const av = availability(o, data.cooks, now);
   const live = av === "live";
-  const reason = av === "expired" ? "deadline passed" : av === "closed" ? "offer closed" : av === "draft" ? "not published" : "eligibility suspended";
-  const contactOk = live && data.signedIn && data.phoneConsent;
+  const reason = av === "expired" ? "deadline passed" : av === "closed" ? "offer closed" : av === "draft" ? "not published" : av === "consent-withdrawn" ? "cook consent withdrawn" : av === "moderated" ? "offer suspended" : "eligibility suspended";
+  const contactOk = canDiscloseContact(o, data.cooks, now, data.signedIn, data.phoneConsent);
   const cross = o.crossContact === "none" ? "No known cross-contact reported by the cook." : o.crossContact === "known" ? (o.crossContactNote || "Cross-contact reported; details not supplied.") : "Unknown.";
   return <div className="max-w-5xl">
     <button data-testid="button-back" onClick={() => go("Discover")} className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-[#627269]"><ArrowLeft size={16} /> Back to Discover</button>
     {av === "expired" && <Notice tone="red" testid="status-expired"><strong>Ordering deadline has passed.</strong> This direct link remains viewable, but this offer is no longer in discovery.</Notice>}
     {av === "closed" && <Notice tone="red" testid="status-closed"><strong>This offer is closed.</strong> The cook has closed this offer.</Notice>}
+    {av === "consent-withdrawn" && <Notice tone="red" testid="status-consent-withdrawn"><strong>The cook has withdrawn contact consent.</strong> This offer is hidden from discovery and the sample contact route is unavailable.</Notice>}
     {(av === "ineligible" || av === "moderated") && <Notice tone="red" testid="status-ineligible"><strong>This offer is unavailable in this demo.</strong> {av === "moderated" ? "It is suspended pending operator review." : "The cook is not currently eligible."} It is hidden from discovery and contact is unavailable.</Notice>}
     {av === "draft" && <Notice tone="gold" testid="status-draft"><strong>Draft, not published.</strong> Only you can see this preview; neighbors cannot find it.</Notice>}
     <div className="nk-detail-grid mt-4 grid grid-cols-[1.4fr_.8fr] gap-5">
       <div className="nk-card overflow-hidden"><MealArt art={o.art} big /><div className="nk-content">
         <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="nk-eyebrow">{o.cuisine} · Maplewood</p><h1 className="nk-heading" data-testid="text-offer-title">{o.title || "Untitled meal"}</h1></div><span className="text-2xl font-bold text-[#365b4b]">{money(o.price)}<small className="text-sm font-medium"> / portion</small></span></div>
         <p className="mt-3 leading-6 text-[#68776c]">{o.description}</p>
+        <p className="mt-2 text-xs text-[#718076]" data-testid="text-offer-updated">Last updated {fmtStamp(o.updatedAt)} · offer v{o.version} · fictional local record</p>
         <div className="mt-5 flex items-center gap-3"><Avatar initials={cook?.initials ?? "?"} /><div><b className="text-sm">{cookName(data.cooks, o.cookId)}</b><p className="text-xs text-[#758278]">Residential cook · sample profile</p></div><button data-testid="link-cook-profile" className="ml-auto text-xs font-semibold text-[#486650]" onClick={() => go("Profile", { cookId: o.cookId })}>View profile</button></div>
         <div className="mt-6 grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-[#f5f6ef] p-3"><p className="nk-eyebrow">Portion</p><p className="text-sm font-semibold">{o.portion}</p></div>
-          <div className="rounded-xl bg-[#f5f6ef] p-3"><p className="nk-eyebrow">Cook-reported plan</p><p className="text-sm font-semibold">Planned for {fmtLong(o.pickupDate)}</p><p className="text-xs text-[#77847a]">Same-day preparation commitment · cook-reported</p></div>
+          <div className="rounded-xl bg-[#f5f6ef] p-3"><p className="nk-eyebrow">Cook-reported plan</p><p className="text-sm font-semibold">Planned for {fmtLong(o.pickupDate)}</p><p className="text-xs text-[#77847a]">{o.commitment ? "Same-day preparation commitment · cook-reported" : "Preparation not confirmed."}</p><p className="mt-1 text-xs text-[#77847a]">{o.preparationConfirmation ? "Statement " + o.preparationConfirmation.statementVersion + " · confirmed " + fmtStamp(o.preparationConfirmation.confirmedAt) : "No versioned confirmation recorded for this older sample."}</p></div>
           <div className="rounded-xl bg-[#f5f6ef] p-3"><p className="nk-eyebrow">Pickup</p><p className="text-sm font-semibold">{fmtDay(o.pickupDate)} · {fmtWindow(o)}</p><p className="text-xs text-[#77847a]">{o.condition === "Hot" ? "Hot at pickup" : "Chilled for pickup"} · UTC</p></div>
           <div className="rounded-xl bg-[#f5f6ef] p-3"><p className="nk-eyebrow">Contact/order by</p><p className="text-sm font-semibold" data-testid="text-deadline">{fmtDeadline(o)}</p><p className="text-xs text-[#77847a]">Demo kitchen time (UTC)</p></div>
         </div>
         <div className="mt-6"><h2 className="nk-display text-xl">Ingredients & sourcing</h2><ul className="mt-3 space-y-2">{o.ingredients.filter((i) => i.name.trim()).map((i, k) => <li key={k} className="flex gap-2 text-sm text-[#5f7064]"><Sprout size={15} className="mt-0.5 shrink-0 text-[#789174]" />{ingredientLine(i)}</li>)}</ul></div>
         <div className="mt-5 rounded-xl border border-[#e7e9e0] p-4"><p className="nk-eyebrow">Major allergen declarations · cook-reported</p><div className="grid gap-2 sm:grid-cols-3">{ALLERGENS.map((a) => { const d = o.allergens[a] ?? "unknown"; return <div key={a} className="rounded-lg bg-[#f7f8f2] px-3 py-2 text-xs"><b>{a}</b><span className="mt-1 block text-[#718076]">{d === "present" ? "Present in listed ingredients" : d === "absent" ? "Cook-declared not present · not a safety claim" : "Unknown · no declaration supplied"}</span></div>; })}</div></div>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-[#e7e9e0] p-4"><p className="nk-eyebrow">Other disclosed allergens</p><p className="text-sm leading-5">No additional disclosure supplied in this fictional record.</p></div><div className="rounded-xl border border-[#e7e9e0] p-4"><p className="nk-eyebrow">Kitchen cross-contact</p><p className="text-sm leading-5">{cross}</p></div></div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-[#e7e9e0] p-4"><p className="nk-eyebrow">Other disclosed allergens · cook-reported</p><p className="whitespace-pre-wrap text-sm leading-5" data-testid="text-other-allergens">{o.otherAllergens?.trim() || "Unknown / not stated. No additional disclosure supplied in this fictional record."}</p></div><div className="rounded-xl border border-[#e7e9e0] p-4"><p className="nk-eyebrow">Kitchen cross-contact</p><p className="text-sm leading-5">{cross}</p></div></div>
         {o.tags.length > 0 && <p className="mt-3 text-xs text-[#718076]">Dietary tags (cook-declared, never proof of allergy safety): {o.tags.join(", ")}</p>}
         <div className="mt-3 rounded-xl bg-[#f7f5ec] p-4 text-sm"><b>Organic status is cook-reported.</b> Each ingredient above includes a sourcing and organic-status statement. Unknown or not stated does not mean absent or certified.</div>
         <div className="mt-3 rounded-xl border border-[#e7e9e0] p-4"><p className="nk-eyebrow">Handling instructions · cook-provided</p><p className="text-sm leading-5">{o.handling}</p></div>

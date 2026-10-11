@@ -5,6 +5,10 @@ export type AllergenDecl = "unknown" | "present" | "absent";
 export type Organic = "unknown" | "not stated" | "cook-reported organic" | "not organic";
 export interface Ingredient { name: string; source: string; organic: Organic }
 export type OfferStatus = "draft" | "published" | "closed";
+export interface PreparationConfirmation {
+  statementVersion: "same-day-v1"; confirmedAt: string; pickupDate: string; offerVersion: number;
+}
+export type OfferRevision = Omit<Offer, "revisions">;
 export interface Offer {
   id: string; cookId: string; title: string; description: string; price: string; cuisine: string; portion: string;
   ingredients: Ingredient[]; allergens: Record<string, AllergenDecl>;
@@ -13,6 +17,9 @@ export interface Offer {
   pickupDate: string; pickupStart: string; pickupEnd: string; deadlineDate: string; deadlineTime: string;
   commitment: boolean; contactConsent: boolean; status: OfferStatus; moderated: boolean;
   version: number; updatedAt: string; art: "peach" | "sage" | "blue";
+  otherAllergens?: string;
+  preparationConfirmation?: PreparationConfirmation;
+  revisions?: OfferRevision[];
 }
 export type CookStatus = "none" | "draft" | "pending" | "approved" | "rejected" | "suspended";
 export interface Cook { id: string; name: string; initials: string; bio: string; status: CookStatus }

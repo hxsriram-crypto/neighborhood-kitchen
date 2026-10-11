@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import type { Application, CookStatus, Data, Offer, OfferStatus, Report, Screen } from "./types";
 import { ME } from "./types";
 import { load, resetStorage, save, type StorageStatus } from "./storage";
-import { deadlineMs, validatePublish } from "./domain";
+import { CUSTOMER_REMINDER, deadlineMs } from "./domain";
+import { prepareOfferSave, publicationMessage, reviseOffer, withdrawOfferConsent } from "./publication";
 
 export interface Nav { screen: Screen; offerId?: string; cookId?: string; editorId?: string; editorKey: number; seed?: Partial<Offer>; mode?: string }
 export interface Flash { id: number; text: string; tone: "green" | "red" | "gold" }
@@ -10,7 +11,8 @@ interface Store {
   data: Data; now: number; storage: StorageStatus; nav: Nav; flash: Flash | null; clearFlash: () => void;
   go: (screen: Screen, o?: { offerId?: string; cookId?: string; editorId?: string; seed?: Partial<Offer>; mode?: string }) => void;
   signIn: () => void; signOut: () => void; setOperator: (v: boolean) => void; setPhoneConsent: (v: boolean) => void;
-  upsertOffer: (o: Offer, msg: string) => void; closeOffer: (id: string) => void; reopenOffer: (id: string) => string[];
+  upsertOffer: (o: Offer, msg: string, confirmed?: boolean) => string[]; closeOffer: (id: string) => void;
+  withdrawContact: (id: string) => void;
   saveApplication: (a: Application, status: CookStatus) => void; restartApplication: () => void;
   submitReport: (r: Omit<Report, "id" | "createdAt" | "status">) => void;
   setCookStatus: (id: string, status: CookStatus, note: string) => void; setModerated: (offerId: string, v: boolean, note: string) => void;
@@ -70,21 +72,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     signOut: () => commit((d) => ({ ...d, signedIn: false, phoneConsent: false }), "Signed out of the simulated identity."),
     setOperator: (v) => commit((d) => ({ ...d, operator: v }), v ? "Simulated operator mode on (not security)." : "Simulated operator mode off."),
     setPhoneConsent: (v) => commit((d) => ({ ...d, phoneConsent: v }), v ? "Contact consent recorded." : "Contact consent withdrawn."),
-    upsertOffer: (o, msg) => commit((d) => { const exists = d.offers.some((x) => x.id === o.id); return { ...d, offers: exists ? d.offers.map((x) => (x.id === o.id ? o : x)) : [...d.offers, o] }; }, msg),
-    closeOffer: (id) => commit((d) => ({ ...d, offers: d.offers.map((o) => (o.id === id ? { ...o, status: "closed" as OfferStatus, version: o.version + 1, updatedAt: new Date().toISOString() } : o)) }), "Offer closed. It is hidden from discovery and contact is blocked."),
-    reopenOffer: (id) => {
-      const o = dataRef.current.offers.find((x) => x.id === id);
-      if (!o) return ["Offer not found."];
-      const errs = validatePublish(o, dataRef.current.cooks.find((c) => c.id === o.cookId), Date.now());
-      if (errs.length) return errs;
-      commit((d) => ({ ...d, offers: d.offers.map((x) => (x.id === id ? { ...x, status: "published" as OfferStatus, version: x.version + 1, updatedAt: new Date().toISOString() } : x)) }), "Offer reopened by you.");
+    upsertOffer: (input, msg, confirmed = false) => {
+      const current = dataRef.current;
+      const previous = current.offers.find((x) => x.id === input.id);
+      if (!current.signedIn || input.cookId !== ME || (previous && previous.cookId !== ME)) return ["Use the simulated cook identity to edit your own fictional offers."];
+      const result = prepareOfferSave(input, previous, current.cooks.find((c) => c.id === ME), Date.now(), confirmed);
+      if (!result.offer) return result.errors;
+      const offer = result.offer;
+      commit((d) => ({ ...d, offers: previous ? d.offers.map((x) => x.id === offer.id ? offer : x) : [...d.offers, offer] }), offer.status === "draft" ? msg : publicationMessage(msg));
       return [];
     },
+    closeOffer: (id) => commit((d) => ({ ...d, offers: d.offers.map((o) => (o.id === id && o.cookId === ME && d.signedIn ? reviseOffer(o, { ...o, status: "closed" as OfferStatus }, Date.now()) : o)) }), "Offer closed. It is hidden from discovery and contact is blocked. " + CUSTOMER_REMINDER),
+    withdrawContact: (id) => commit((d) => ({ ...d, offers: d.offers.map((o) => o.id === id && o.cookId === ME && d.signedIn ? withdrawOfferConsent(o, Date.now()) : o) }), "Cook contact consent withdrawn. The offer is hidden from discovery and its sample route is blocked immediately. " + CUSTOMER_REMINDER),
     saveApplication: (a, status) => commit((d) => audit({ ...d, applications: { ...d.applications, [ME]: a }, cooks: d.cooks.map((c) => (c.id === ME ? { ...c, name: a.name.trim() || c.name, status } : c)) }, status === "pending" ? "Application submitted" : "Application draft saved", "Alex Larkin", status === "pending" ? "Awaiting operator decision." : "Incomplete application saved.", "Alex Larkin (demo)"), status === "pending" ? "Application submitted and pending review." : "Application draft saved."),
     restartApplication: () => commit((d) => audit({ ...d, cooks: d.cooks.map((c) => (c.id === ME ? { ...c, status: "none" as CookStatus } : c)), applications: { ...d.applications, [ME]: { ...d.applications[ME], residential: false, jurisdiction: false, disclosures: false, evidenceSample: false, submittedAt: undefined } } }, "Restarted as new applicant", "Alex Larkin", "Demo shortcut to try application-to-approval.", "Alex Larkin (demo)"), "Restarted as a new applicant. Your offers are hidden until you are approved again."),
     submitReport: (r) => commit((d) => audit({ ...d, reports: [{ ...r, id: "r" + Date.now().toString(36), createdAt: new Date().toISOString(), status: "open" }, ...d.reports] }, "Report filed", r.targetLabel, r.reason, "Neighbor (demo)"), "Report saved to the operator queue."),
     setCookStatus: (id, status, note) => commit((d) => audit({ ...d, cooks: d.cooks.map((c) => (c.id === id ? { ...c, status } : c)) }, "Cook " + status, d.cooks.find((c) => c.id === id)?.name ?? id, note || "No reason entered."), "Cook marked " + status + ". Offers and contact update immediately."),
-    setModerated: (id, v, note) => commit((d) => audit({ ...d, offers: d.offers.map((o) => (o.id === id ? { ...o, moderated: v } : o)) }, v ? "Offer suspended" : "Offer restored", d.offers.find((o) => o.id === id)?.title ?? id, note || "No reason entered."), v ? "Offer suspended and hidden." : "Offer restored."),
+    setModerated: (id, v, note) => commit((d) => audit({ ...d, offers: d.offers.map((o) => (o.id === id ? reviseOffer(o, { ...o, moderated: v }, Date.now()) : o)) }, v ? "Offer suspended" : "Offer restored", d.offers.find((o) => o.id === id)?.title ?? id, note || "No reason entered."), v ? "Offer suspended and hidden." : "Offer restored."),
     resolveReport: (id, note) => commit((d) => audit({ ...d, reports: d.reports.map((r) => (r.id === id ? { ...r, status: "resolved" as const, resolution: note || "Resolved without note.", resolvedAt: new Date().toISOString() } : r)) }, "Report resolved", d.reports.find((r) => r.id === id)?.targetLabel ?? id, note || "No note."), "Report resolved."),
     resetAll: () => {
       const r = resetStorage(Date.now());
