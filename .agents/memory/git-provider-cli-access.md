@@ -16,3 +16,9 @@ The settings UI shown for this project manages GitHub under Workspace Settings â
 **Why:** A user-provided settings screenshot showed the Source Control card as Active under Integrations; earlier documentation results used a different menu label and led to unhelpful repeated instructions.
 
 **How to apply:** Prefer the observed UI labels over stale navigation instructions. An Active card confirms the connection is configured, not that Git transport can authenticate. When it remains active after reconnection but command-line access fails, try the project Git pane rather than repeating the same reconnection steps.
+
+The integration directory may report this source-control connection as unattached while the bind operation reports it is already attached. Do not claim that binding fixed access without verifying it.
+
+**Why:** These attachment reports disagreed while the Git pane reported no connected providers and Git transport still rejected authentication.
+
+**How to apply:** Refresh the connection identity after reconnection, follow the documented attachment flow once, and treat the actual Git operation as the success check. If both Git transport and the Git pane still fail, stop repeating reconnect/attachment operations and report the unresolved connection mismatch.
