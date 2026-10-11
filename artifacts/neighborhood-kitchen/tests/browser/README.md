@@ -1,4 +1,44 @@
-# Scripted helper browser regressions
+# Browser regressions
+
+## URL and history navigation
+
+Run from the workspace root:
+
+```sh
+pnpm --filter @workspace/neighborhood-kitchen run test:navigation:browser
+```
+
+This committed suite drives the real app in Chromium against disposable Vite
+production builds at `/` and `/navigation-regression/`. Playwright builds, starts,
+and stops its test-only preview servers on ports 5181 and 5182. No managed
+workflow, API, real identity, or service is needed or changed. Both ports must be
+free; an already-running server is deliberately never reused.
+
+Each case has a fresh context, fixed UTC time, and isolated fictional localStorage
+with prior simulated neighbor sign-in and contact consent. Data is seeded only
+when absent, not overwritten on reload; read-only flows must leave it unchanged.
+The existing Google Fonts CSS import receives an empty local response (system
+fonts are used). All other external, API, and non-GET requests are blocked and fail
+the test if attempted. No request reaches an external service.
+Browser exceptions and console errors also fail the test. No contacts are invoked.
+
+Every case runs under both bases. Coverage:
+
+- Discover → encoded meal ID → encoded cook ID; real browser Back and Forward,
+  reload on meal/profile, and no duplicate history step from the current tab.
+- Fresh direct meal links, reload, and the in-app Back to Discover button.
+- Direct/reloaded closed, already-expired, consent-withdrawn, moderated, and
+  ineligible meals keep warnings and block contact even with prior neighbor consent.
+- Missing meals and private drafts stay hidden; absent IDs show not-found
+  and recover with browser history.
+
+This does not advance the clock across cutoffs, test sorting, or cover helper
+restrictions. Failure traces/screenshots and disposable builds stay under the
+ignored `generated-artifacts/navigation-browser/` directory. There are no retries.
+Use `-- --project=artifact-base` or `-- --grep 'Back/Forward'` to narrow a run.
+Chromium setup and the shared browser typecheck command are described below.
+
+## Scripted helper
 
 These Playwright tests drive the real React helper. They complement
 `src/nk/helper.test.ts`, which tests parsing and matching without the browser.

@@ -9,6 +9,7 @@
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:helper:browser": "playwright test",
+    "test:navigation:browser": "playwright test --config playwright.navigation.config.ts",
     "typecheck:browser": "tsc -p tsconfig.browser.json --noEmit"
   },
   "devDependencies": {

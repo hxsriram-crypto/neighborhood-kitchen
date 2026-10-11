@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["playwright.config.ts", "tests/browser/**/*.ts"],
+  "include": ["playwright*.config.ts", "tests/browser/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
