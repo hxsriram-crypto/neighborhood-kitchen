@@ -1,6 +1,12 @@
-# [Project name]
+# Neighborhood Kitchen
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A responsive web-app concept for discovering upcoming home-cooked meals from eligible residential neighbors and contacting cooks outside the platform.
+
+## Current authorization
+
+Only document review and clickable fictional-data wireframes are authorized. Do not begin functional development. Do not enable real contact, real participant notifications, or live food activity.
+
+The founder must review and explicitly approve the wireframes before advancing. Unresolved product, design, architecture, vendor, cost, privacy, or scope choices require practical options and a recommendation followed by an explicit founder answer before dependent work. Proposed defaults are not approvals.
 
 ## Run & Operate
 
@@ -9,9 +15,11 @@ _Replace the heading above with the project's name, and this line with one sente
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Template database env for possible later use: `DATABASE_URL` — not required for visual wireframes
 
-## Stack
+## Template stack (not approved product architecture)
+
+These packages were supplied with the project template. Their presence is not founder approval to use them for the functional product.
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - API: Express 5
@@ -30,7 +38,7 @@ _Populate as you build — non-obvious choices a reader couldn't infer from the 
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Discovery and connection only. No in-app orders, reservations, inventory, payments, delivery, order messages, pickup confirmation, or completion tracking. Current screens and assistant interactions are simulated visual wireframes.
 
 ## User preferences
 
@@ -43,3 +51,5 @@ _Populate as you build — sharp edges, "always run X before Y" rules._
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- [Document review and source-document links](docs/document-review.md)
+- [Founder decision log and authorization gates](docs/decision-log.md)
